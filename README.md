@@ -68,7 +68,7 @@ career_ai_pilot/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/elumalai0083/career_ai_pilot.git
+git clone https://github.com/ELUMALAI2007/career_ai_pilot.git
 cd career_ai_pilot
 ```
 
@@ -171,4 +171,4 @@ pytest tests/
 
 ## 👥 Contributors
 
-* **Elumalai M** - *Lead Developer & Architect* - [elumalai0083](https://github.com/elumalai0083)
+* **Elumalai M** - *Lead Developer & Architect* - [ELUMALAI2007](https://github.com/ELUMALAI2007)
