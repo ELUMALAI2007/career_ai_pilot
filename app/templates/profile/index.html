@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}User Profile - CareerPilot AI{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="fa-solid fa-user text-primary me-2"></i> User Profile & Credentials</h2>
+        <p class="text-muted mb-0">Manage your personal, academic, and social profile links.</p>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="glass-card p-4 p-md-5">
+            <form method="POST" action="{{ url_for('profile.index') }}">
+                {{ form.hidden_tag() if form }}
+                <div class="mb-3">
+                    <label class="form-label text-muted">Phone Number</label>
+                    {{ form.phone(class="form-control bg-dark text-white border-secondary") if form else '<input class="form-control bg-dark text-white border-secondary" name="phone">' }}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted">Professional Headline</label>
+                    {{ form.headline(class="form-control bg-dark text-white border-secondary") if form else '<input class="form-control bg-dark text-white border-secondary" name="headline">' }}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted">Target Job Role</label>
+                    {{ form.target_role(class="form-control bg-dark text-white border-secondary") if form else '<input class="form-control bg-dark text-white border-secondary" name="target_role">' }}
+                </div>
+                <button type="submit" class="btn btn-primary-custom w-100">Update Profile</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

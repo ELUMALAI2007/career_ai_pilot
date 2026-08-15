@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}Practice Session — CareerPilot AI{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="glass-card p-3 mb-4 border-start border-primary border-4 rounded-3 shadow-sm d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="fw-bold text-white mb-0">Practice Session: {{ topic|title }}</h5>
+            <small class="text-secondary">Difficulty: <span class="text-capitalize text-info">{{ difficulty }}</span></small>
+        </div>
+        <div>
+            <span class="badge bg-dark border border-secondary text-light px-3 py-2 fs-6" id="timerBadge">
+                <i class="fa-solid fa-stopwatch text-warning me-1"></i> <span id="timerDisplay">00:00</span>
+            </span>
+        </div>
+    </div>
+
+    <!-- Question Container -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-9 col-xl-8">
+            {% for q in questions %}
+            <div class="question-card glass-card p-4 mb-4 border-0 shadow-sm {% if not loop.first %}d-none{% endif %}" id="q_card_{{ loop.index }}" data-qid="{{ q.id }}">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="badge bg-primary bg-opacity-20 text-primary px-3 py-1 font-monospace fs-7">
+                        Question {{ loop.index }} of {{ questions|length }}
+                    </span>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-warning bookmark-btn" data-qid="{{ q.id }}" onclick="toggleBookmark({{ q.id }}, this)">
+                            <i class="fa-{% if q.id in user_bookmarks %}solid{% else %}regular{% endif %} fa-bookmark me-1"></i> Bookmark
+                        </button>
+                        <span class="badge bg-secondary bg-opacity-20 text-capitalize">{{ q.difficulty }}</span>
+                    </div>
+                </div>
+
+                <!-- Question Text -->
+                <h5 class="fw-semibold text-white mb-4 leading-relaxed">{{ q.question_text }}</h5>
+
+                <!-- Options -->
+                <div class="options-group mb-4">
+                    {% for opt_key in ['a', 'b', 'c', 'd'] %}
+                    {% set opt_val = attribute(q, 'option_' ~ opt_key) %}
+                    <div class="option-item glass-card p-3 mb-2 border border-secondary border-opacity-25 rounded-3 cursor-pointer hover-border-primary text-white d-flex align-items-center"
+                         id="opt_{{ q.id }}_{{ opt_key|upper }}"
+                         onclick="selectOption({{ q.id }}, '{{ opt_key|upper }}')">
+                        <span class="badge bg-secondary me-3 px-2.5 py-1.5 font-monospace">{{ opt_key|upper }}</span>
+                        <span>{{ opt_val }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Action Controls -->
+                <div class="d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-primary px-4 fw-semibold submit-btn" id="submit_btn_{{ q.id }}" onclick="submitAnswer({{ q.id }}, {{ loop.index }})">
+                        Submit Answer
+                    </button>
+                    {% if not loop.last %}
+                    <button type="button" class="btn btn-outline-light px-4 fw-semibold next-btn d-none" id="next_btn_{{ q.id }}" onclick="nextQuestion({{ loop.index }})">
+                        Next Question <i class="fa-solid fa-arrow-right ms-1"></i>
+                    </button>
+                    {% else %}
+                    <a href="{{ url_for('aptitude.index') }}" class="btn btn-success px-4 fw-semibold finish-btn d-none" id="finish_btn_{{ q.id }}">
+                        Finish & Complete Practice
+                    </a>
+                    {% endif %}
+                </div>
+
+                <!-- Post-Submission Feedback Box -->
+                <div class="feedback-box mt-4 p-4 rounded-3 border d-none" id="feedback_{{ q.id }}">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="result-badge-icon fs-3 me-3" id="result_icon_{{ q.id }}"></div>
+                        <div>
+                            <h6 class="fw-bold mb-0" id="result_title_{{ q.id }}"></h6>
+                            <small class="text-secondary" id="result_subtitle_{{ q.id }}"></small>
+                        </div>
+                    </div>
+
+                    <!-- Step-by-Step Explanation -->
+                    <div class="mb-3">
+                        <strong class="text-white d-block mb-1"><i class="fa-solid fa-list-ol text-info me-1"></i> Step-by-Step Explanation:</strong>
+                        <div class="p-3 bg-dark bg-opacity-75 rounded-3 text-secondary font-monospace fs-7 whitespace-pre-line" id="expl_text_{{ q.id }}"></div>
+                    </div>
+
+                    <!-- Formula & Shortcut -->
+                    <div class="row g-2">
+                        <div class="col-12 col-md-6" id="formula_container_{{ q.id }}">
+                            <div class="p-2.5 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded-3 text-primary fs-7">
+                                <strong>Formula:</strong> <span id="formula_text_{{ q.id }}"></span>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6" id="shortcut_container_{{ q.id }}">
+                            <div class="p-2.5 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-3 text-warning fs-7">
+                                <strong>Shortcut:</strong> <span id="shortcut_text_{{ q.id }}"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+let startTime = Date.now();
+let selectedOptions = {};
+let timerInterval;
+
+// Timer update
+function startTimer() {
+    timerInterval = setInterval(() => {
+        let elapsed = Math.floor((Date.now() - startTime) / 1000);
+        let m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+        let s = String(elapsed % 60).padStart(2, '0');
+        document.getElementById('timerDisplay').innerText = `${m}:${s}`;
+    }, 1000);
+}
+startTimer();
+
+function selectOption(qid, optKey) {
+    let card = document.getElementById(`q_card_${qid}`);
+    let items = card.querySelectorAll('.option-item');
+    items.forEach(it => it.classList.remove('border-primary', 'bg-primary', 'bg-opacity-20'));
+    
+    let target = document.getElementById(`opt_${qid}_${optKey}`);
+    if (target) {
+        target.classList.add('border-primary', 'bg-primary', 'bg-opacity-20');
+        selectedOptions[qid] = optKey;
+    }
+}
+
+function submitAnswer(qid, idx) {
+    let opt = selectedOptions[qid];
+    if (!opt) {
+        alert("Please select an option first!");
+        return;
+    }
+
+    let timeTaken = Math.floor((Date.now() - startTime) / 1000);
+
+    fetch("{{ url_for('aptitude.practice_submit_question') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token() }}" },
+        body: JSON.stringify({ question_id: qid, selected_option: opt, time_taken: timeTaken })
+    })
+    .then(r => r.json())
+    .then(data => {
+        let submitBtn = document.getElementById(`submit_btn_${qid}`);
+        let nextBtn = document.getElementById(`next_btn_${qid}`);
+        let finishBtn = document.getElementById(`finish_btn_${qid}`);
+        let feedback = document.getElementById(`feedback_${qid}`);
+        let icon = document.getElementById(`result_icon_${qid}`);
+        let title = document.getElementById(`result_title_${qid}`);
+        let subtitle = document.getElementById(`result_subtitle_${qid}`);
+
+        submitBtn.classList.add('d-none');
+        if (nextBtn) nextBtn.classList.remove('d-none');
+        if (finishBtn) finishBtn.classList.remove('d-none');
+
+        feedback.classList.remove('d-none');
+        document.getElementById(`expl_text_${qid}`).innerText = data.explanation || "";
+
+        if (data.formula) {
+            document.getElementById(`formula_text_${qid}`).innerText = data.formula;
+        } else {
+            document.getElementById(`formula_container_${qid}`).classList.add('d-none');
+        }
+
+        if (data.shortcut) {
+            document.getElementById(`shortcut_text_${qid}`).innerText = data.shortcut;
+        } else {
+            document.getElementById(`shortcut_container_${qid}`).classList.add('d-none');
+        }
+
+        if (data.is_correct) {
+            feedback.classList.add('border-success', 'bg-success', 'bg-opacity-10');
+            icon.innerHTML = '<i class="fa-solid fa-circle-check text-success"></i>';
+            title.innerText = "Correct Answer!";
+            title.className = "fw-bold text-success mb-0";
+            subtitle.innerText = `Time taken: ${data.actual_time}s (Ideal: ${data.estimated_time}s)`;
+            document.getElementById(`opt_${qid}_${opt}`).classList.add('bg-success', 'border-success');
+        } else {
+            feedback.classList.add('border-danger', 'bg-danger', 'bg-opacity-10');
+            icon.innerHTML = '<i class="fa-solid fa-circle-xmark text-danger"></i>';
+            title.innerText = `Incorrect! Correct Choice is Option ${data.correct_option}`;
+            title.className = "fw-bold text-danger mb-0";
+            subtitle.innerText = `Time taken: ${data.actual_time}s`;
+            document.getElementById(`opt_${qid}_${opt}`).classList.add('bg-danger', 'border-danger');
+            document.getElementById(`opt_${qid}_${data.correct_option}`).classList.add('bg-success', 'border-success');
+        }
+    })
+    .catch(err => console.error(err));
+}
+
+function nextQuestion(idx) {
+    document.getElementById(`q_card_${idx}`).classList.add('d-none');
+    let nextCard = document.getElementById(`q_card_${idx + 1}`);
+    if (nextCard) nextCard.classList.remove('d-none');
+}
+
+function toggleBookmark(qid, btn) {
+    fetch("{{ url_for('aptitude.bookmark_toggle') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token() }}" },
+        body: JSON.stringify({ question_id: qid })
+    })
+    .then(r => r.json())
+    .then(data => {
+        let icon = btn.querySelector('i');
+        if (data.bookmarked) {
+            icon.className = "fa-solid fa-bookmark me-1";
+        } else {
+            icon.className = "fa-regular fa-bookmark me-1";
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Daily 10 Challenge — CareerPilot AI{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="glass-card p-4 mb-4 border-start border-warning border-4 rounded-3 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold text-white mb-1"><i class="fa-solid fa-calendar-check text-warning me-2"></i> Daily 10 Challenge</h2>
+                <p class="text-secondary mb-0">10 daily adaptive questions across Quant, Logical, and Verbal. Keep your daily streak alive!</p>
+            </div>
+            <a href="{{ url_for('aptitude.index') }}" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Aptitude Home</a>
+        </div>
+    </div>
+
+    {% if attempt %}
+    <div class="glass-card p-4 mb-4 text-center border-0 shadow-sm">
+        <i class="fa-solid fa-circle-check text-success display-3 mb-3"></i>
+        <h4 class="fw-bold text-white mb-2">Today's Daily Challenge Completed!</h4>
+        <p class="text-secondary mb-3">You scored <strong class="text-primary">{{ attempt.score }}/10</strong> ({{ attempt.accuracy_percentage }}% Accuracy) on {{ attempt.completed_at.strftime('%b %d, %Y') }}.</p>
+        <a href="{{ url_for('aptitude.index') }}" class="btn btn-primary px-4 py-2 fw-semibold">Return to Dashboard</a>
+    </div>
+    {% else %}
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+            <form action="{{ url_for('aptitude.daily_challenge_submit') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                {% for q in questions %}
+                <div class="glass-card p-4 mb-4 border-0 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="badge bg-warning bg-opacity-20 text-warning px-3 py-1 font-monospace">
+                            Daily Question {{ loop.index }} of 10
+                        </span>
+                        <span class="badge bg-secondary bg-opacity-20 text-capitalize">{{ q.difficulty }}</span>
+                    </div>
+
+                    <h6 class="fw-semibold text-white mb-3 leading-relaxed">{{ q.question_text }}</h6>
+
+                    <div class="options-list">
+                        {% for opt_key in ['a', 'b', 'c', 'd'] %}
+                        {% set opt_val = attribute(q, 'option_' ~ opt_key) %}
+                        <div class="form-check p-3 mb-2 glass-card border border-secondary border-opacity-25 rounded-3 text-white">
+                            <input class="form-check-input ms-0 me-3" type="radio" name="q_{{ q.id }}" id="daily_opt_{{ q.id }}_{{ opt_key }}" value="{{ opt_key|upper }}" required>
+                            <label class="form-check-label w-100 cursor-pointer" for="daily_opt_{{ q.id }}_{{ opt_key }}">
+                                <strong class="text-warning me-2">{{ opt_key|upper }}.</strong> {{ opt_val }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+
+                <button type="submit" class="btn btn-warning w-100 py-3 fw-bold fs-6 mb-4">
+                    <i class="fa-solid fa-paper-plane me-2"></i> Submit Today's Daily 10 Challenge
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

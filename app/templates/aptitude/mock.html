@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Timed Mock Examination Hub — CareerPilot AI{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="glass-card p-4 mb-4 border-start border-danger border-4 rounded-3 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold text-white mb-1"><i class="fa-solid fa-clock text-danger me-2"></i> Timed Mock Examination Engine</h2>
+                <p class="text-secondary mb-0">Simulate real campus recruitment online assessments under server-enforced timer conditions.</p>
+            </div>
+            <a href="{{ url_for('aptitude.index') }}" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Aptitude Home</a>
+        </div>
+    </div>
+
+    <!-- Standard Mock Options -->
+    <h5 class="fw-bold text-white mb-3">Standard Placement Mocks</h5>
+    <div class="row g-3 mb-4">
+        <!-- Quick Mock -->
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="glass-card p-4 h-100 border-0 hover-lift shadow-sm d-flex flex-column justify-content-between">
+                <div>
+                    <span class="badge bg-info bg-opacity-20 text-info mb-2">15 Questions / 15 Mins</span>
+                    <h5 class="fw-bold text-white mb-1">Quick Mock</h5>
+                    <p class="text-secondary fs-7 mb-3">Fast diagnostic assessment across core topics.</p>
+                </div>
+                <a href="{{ url_for('aptitude.mock_start', type='quick') }}" class="btn btn-outline-info w-100 fw-semibold">
+                    Start Quick Mock
+                </a>
+            </div>
+        </div>
+
+        <!-- Standard Assessment -->
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="glass-card p-4 h-100 border-0 hover-lift shadow-sm d-flex flex-column justify-content-between">
+                <div>
+                    <span class="badge bg-primary bg-opacity-20 text-primary mb-2">30 Questions / 30 Mins</span>
+                    <h5 class="fw-bold text-white mb-1">Standard Mock</h5>
+                    <p class="text-secondary fs-7 mb-3">Standard campus placement round 1 simulation.</p>
+                </div>
+                <a href="{{ url_for('aptitude.mock_start', type='standard') }}" class="btn btn-primary w-100 fw-semibold">
+                    Start Standard Mock
+                </a>
+            </div>
+        </div>
+
+        <!-- Placement Mastery -->
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="glass-card p-4 h-100 border-0 hover-lift shadow-sm d-flex flex-column justify-content-between">
+                <div>
+                    <span class="badge bg-warning bg-opacity-20 text-warning mb-2">50 Questions / 60 Mins</span>
+                    <h5 class="fw-bold text-white mb-1">Placement Mock</h5>
+                    <p class="text-secondary fs-7 mb-3">Comprehensive test matching MNC drive weightage.</p>
+                </div>
+                <a href="{{ url_for('aptitude.mock_start', type='placement') }}" class="btn btn-outline-warning w-100 fw-semibold">
+                    Start Placement Mock
+                </a>
+            </div>
+        </div>
+
+        <!-- Full Length Mock -->
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="glass-card p-4 h-100 border-0 hover-lift shadow-sm d-flex flex-column justify-content-between">
+                <div>
+                    <span class="badge bg-danger bg-opacity-20 text-danger mb-2">100 Questions / 90 Mins</span>
+                    <h5 class="fw-bold text-white mb-1">Full Length Mock</h5>
+                    <p class="text-secondary fs-7 mb-3">Full stamina test across Quant, Logical, Verbal.</p>
+                </div>
+                <a href="{{ url_for('aptitude.mock_start', type='full') }}" class="btn btn-outline-danger w-100 fw-semibold">
+                    Start Full Mock
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Company-Pattern Mocks -->
+    <h5 class="fw-bold text-white mb-3">Company-Pattern Inspired Mocks</h5>
+    <div class="row g-3 mb-4">
+        {% for comp in ['TCS', 'Infosys', 'Wipro', 'Accenture', 'Cognizant', 'Capgemini', 'Zoho'] %}
+        <div class="col-6 col-md-4 col-xl-3">
+            <div class="glass-card p-3 h-100 border-0 hover-lift shadow-sm d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold text-white mb-0">{{ comp }} Pattern</h6>
+                        <i class="fa-solid fa-building text-secondary fs-6"></i>
+                    </div>
+                    <small class="text-muted fs-7 d-block mb-3">Pattern-inspired section weightings</small>
+                </div>
+                <a href="{{ url_for('aptitude.company_mock', company_name=comp) }}" class="btn btn-sm btn-outline-light w-100 fw-semibold">
+                    Launch {{ comp }} Mock
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

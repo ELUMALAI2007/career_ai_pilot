@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Coding Challenges - CareerPilot AI{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="fa-solid fa-code text-primary me-2"></i> Coding & DSA Challenges</h2>
+        <p class="text-muted mb-0">Solve interview programming problems and evaluate time complexity.</p>
+    </div>
+</div>
+
+<div class="glass-card p-4">
+    <div class="table-responsive">
+        <table class="table table-dark table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Problem Title</th>
+                    <th>Difficulty</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- TODO: Render dynamic coding problem list -->
+                <tr>
+                    <td>Binary Search in Rotated Array</td>
+                    <td><span class="badge bg-warning text-dark">Medium</span></td>
+                    <td><a href="#" class="btn btn-outline-primary btn-sm">Solve Challenge</a></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

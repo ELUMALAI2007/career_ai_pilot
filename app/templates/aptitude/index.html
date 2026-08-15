@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}CareerPilot AI — Adaptive Aptitude Master{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Header Banner -->
+    <div class="glass-card p-4 mb-4 border-start border-primary border-4 rounded-3 shadow-sm">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <span class="badge bg-primary text-uppercase px-3 py-2 mb-2 rounded-pill fs-7 fw-semibold">
+                    <i class="fa-solid fa-graduation-cap me-1"></i> CareerPilot AI Placement Engine
+                </span>
+                <h1 class="h2 fw-bold text-white mb-1">Adaptive Aptitude Master</h1>
+                <p class="text-secondary mb-0">Placement-oriented adaptive learning & assessment platform based on standard aptitude concepts.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('aptitude.practice') }}" class="btn btn-primary px-4 py-2 fw-semibold">
+                    <i class="fa-solid fa-play me-2"></i> Practice Mode
+                </a>
+                <a href="{{ url_for('aptitude.mock_hub') }}" class="btn btn-outline-light px-4 py-2 fw-semibold">
+                    <i class="fa-solid fa-stopwatch me-2"></i> Timed Mocks
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stat Cards Row -->
+    <div class="row g-3 mb-4">
+        <!-- Current Level -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-card p-3 text-center h-100 border-0 shadow-sm">
+                <small class="text-secondary text-uppercase fw-semibold d-block mb-1">Current Level</small>
+                <div class="h4 fw-bold text-primary mb-0 text-capitalize">{{ progress.current_level }}</div>
+                <small class="text-muted fs-7">Level {{ ["foundation", "beginner", "intermediate", "advanced", "expert", "master"].index(progress.current_level) }} of 5</small>
+            </div>
+        </div>
+        <!-- Overall Progress -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-card p-3 text-center h-100 border-0 shadow-sm">
+                <small class="text-secondary text-uppercase fw-semibold d-block mb-1">Progress</small>
+                <div class="h4 fw-bold text-info mb-0">{{ progress.overall_accuracy }}%</div>
+                <small class="text-muted fs-7">Overall Accuracy</small>
+            </div>
+        </div>
+        <!-- Questions Solved -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-card p-3 text-center h-100 border-0 shadow-sm">
+                <small class="text-secondary text-uppercase fw-semibold d-block mb-1">Solved</small>
+                <div class="h4 fw-bold text-success mb-0">{{ progress.total_questions_solved }}</div>
+                <small class="text-muted fs-7">Questions Attempted</small>
+            </div>
+        </div>
+        <!-- Average Speed -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-card p-3 text-center h-100 border-0 shadow-sm">
+                <small class="text-secondary text-uppercase fw-semibold d-block mb-1">Avg Speed</small>
+                <div class="h4 fw-bold text-warning mb-0">{{ progress.avg_time_seconds }}s</div>
+                <small class="text-muted fs-7">Per Question</small>
+            </div>
+        </div>
+        <!-- Current Streak -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-card p-3 text-center h-100 border-0 shadow-sm">
+                <small class="text-secondary text-uppercase fw-semibold d-block mb-1">Daily Streak</small>
+                <div class="h4 fw-bold text-danger mb-0">🔥 {{ streak.current_streak }}</div>
+                <small class="text-muted fs-7">Best: {{ streak.longest_streak }} Days</small>
+            </div>
+        </div>
+        <!-- Readiness Score -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="glass-card p-3 text-center h-100 border-0 bg-primary bg-opacity-10 shadow-sm">
+                <small class="text-primary text-uppercase fw-bold d-block mb-1">Readiness</small>
+                <div class="h4 fw-bold text-primary mb-0">{{ progress.readiness_score }}/100</div>
+                <small class="text-secondary fs-7">Placement Ready</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommended For You & Navigation Grid -->
+    <div class="row g-4 mb-4">
+        <!-- Recommended For You -->
+        <div class="col-12 col-lg-5">
+            <div class="glass-card p-4 h-100 border-0 shadow-sm">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="icon-circle bg-warning bg-opacity-20 text-warning me-3 p-3 rounded-circle fs-4">
+                        <i class="fa-solid fa-lightbulb"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0 text-white">Recommended For You</h5>
+                        <small class="text-secondary">Based on topic weakness & historical accuracy</small>
+                    </div>
+                </div>
+                <div class="p-3 bg-dark bg-opacity-50 rounded-3 mb-3 border border-secondary border-opacity-25">
+                    <span class="badge bg-danger mb-2">Weak Topic Focus</span>
+                    <h6 class="fw-bold text-white mb-1">{{ recommended_topic }}</h6>
+                    <p class="text-muted fs-7 mb-3">Practice 10 targeted questions to build concept mastery and elevate your readiness score.</p>
+                    <a href="{{ url_for('aptitude.practice_start', topic=recommended_topic, limit=10) }}" class="btn btn-sm btn-primary w-100 py-2 fw-semibold">
+                        Start Recommended Set ({{ recommended_topic }})
+                    </a>
+                </div>
+                <a href="{{ url_for('aptitude.practice_for_me') }}" class="btn btn-outline-info w-100 py-2 fw-semibold">
+                    <i class="fa-solid fa-wand-magic-sparkles me-2"></i> Practice For Me (Auto-Weighted Mix)
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick Access Navigation Grid -->
+        <div class="col-12 col-lg-7">
+            <div class="row g-3">
+                <div class="col-6 col-md-4">
+                    <a href="{{ url_for('aptitude.learn') }}" class="text-decoration-none">
+                        <div class="glass-card p-3 text-center h-100 border-0 hover-lift shadow-sm">
+                            <i class="fa-solid fa-book-open text-info fs-2 mb-2"></i>
+                            <h6 class="fw-bold text-white mb-1">Learn Topics</h6>
+                            <small class="text-secondary">64 Core Concepts</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4">
+                    <a href="{{ url_for('aptitude.daily_challenge') }}" class="text-decoration-none">
+                        <div class="glass-card p-3 text-center h-100 border-0 hover-lift shadow-sm">
+                            <i class="fa-solid fa-calendar-check text-warning fs-2 mb-2"></i>
+                            <h6 class="fw-bold text-white mb-1">Daily 10</h6>
+                            <small class="text-secondary">Adaptive Challenge</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4">
+                    <a href="{{ url_for('aptitude.mock_hub') }}" class="text-decoration-none">
+                        <div class="glass-card p-3 text-center h-100 border-0 hover-lift shadow-sm">
+                            <i class="fa-solid fa-clock text-danger fs-2 mb-2"></i>
+                            <h6 class="fw-bold text-white mb-1">Mock Exams</h6>
+                            <small class="text-secondary">Timed Simulation</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4">
+                    <a href="{{ url_for('aptitude.analytics') }}" class="text-decoration-none">
+                        <div class="glass-card p-3 text-center h-100 border-0 hover-lift shadow-sm">
+                            <i class="fa-solid fa-chart-pie text-success fs-2 mb-2"></i>
+                            <h6 class="fw-bold text-white mb-1">My Analytics</h6>
+                            <small class="text-secondary">Charts & Metrics</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4">
+                    <a href="{{ url_for('aptitude.bookmarks') }}" class="text-decoration-none">
+                        <div class="glass-card p-3 text-center h-100 border-0 hover-lift shadow-sm">
+                            <i class="fa-solid fa-bookmark text-primary fs-2 mb-2"></i>
+                            <h6 class="fw-bold text-white mb-1">Bookmarks</h6>
+                            <small class="text-secondary">Saved Questions</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4">
+                    <a href="{{ url_for('aptitude.history') }}" class="text-decoration-none">
+                        <div class="glass-card p-3 text-center h-100 border-0 hover-lift shadow-sm">
+                            <i class="fa-solid fa-history text-secondary fs-2 mb-2"></i>
+                            <h6 class="fw-bold text-white mb-1">My History</h6>
+                            <small class="text-secondary">Past Attempt Logs</small>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Three Categories Preview -->
+    <div class="row g-4 mb-4">
+        {% for cat in categories %}
+        <div class="col-12 col-md-4">
+            <div class="glass-card p-4 h-100 border-0 shadow-sm d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fa-solid {{ cat.icon or 'fa-brain' }} text-primary fs-3 me-3"></i>
+                        <h5 class="fw-bold text-white mb-0">{{ cat.name }}</h5>
+                    </div>
+                    <p class="text-secondary fs-7 mb-3">{{ cat.description }}</p>
+                </div>
+                <a href="{{ url_for('aptitude.practice', category_id=cat.id) }}" class="btn btn-outline-primary w-100 fw-semibold">
+                    Explore {{ cat.name }}
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

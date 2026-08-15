@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}AI Career Assistant - CareerPilot AI{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="fa-solid fa-robot text-primary me-2"></i> AI Career Assistant</h2>
+        <p class="text-muted mb-0">Ask questions regarding interview strategies, resume tips, and career guidance.</p>
+    </div>
+</div>
+
+<div class="glass-card p-4 d-flex flex-column" style="height: 65vh;">
+    <div id="chatMessagesContainer" class="flex-grow-1 overflow-auto pe-2 mb-3">
+        <div class="d-flex gap-3 mb-3">
+            <i class="fa-solid fa-robot fs-4 text-primary mt-1"></i>
+            <div class="p-3 rounded-3 bg-dark border border-secondary text-white max-w-75">
+                Hello! I am your CareerPilot AI Assistant. How can I help you prepare for your placement drives today?
+            </div>
+        </div>
+    </div>
+    <div class="input-group">
+        <input type="text" id="userQueryInput" class="form-control bg-dark text-white border-secondary" placeholder="Type your career question here...">
+        <button class="btn btn-primary-custom" type="button" id="sendQueryBtn"><i class="fa-solid fa-paper-plane me-1"></i> Send</button>
+    </div>
+</div>
+{% endblock %}

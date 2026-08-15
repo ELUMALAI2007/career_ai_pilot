@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Admin — Aptitude Question Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="glass-card p-4 mb-4 border-start border-warning border-4 rounded-3 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold text-white mb-1"><i class="fa-solid fa-shield-halved text-warning me-2"></i> Admin Aptitude Question Bank</h2>
+                <p class="text-secondary mb-0">Search, filter, manage original generated placement questions, and trigger batch generation.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <form action="{{ url_for('admin.generate_batch_route') }}" method="POST" onsubmit="return confirm('Generate additional original placement questions in batch?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-warning fw-semibold">
+                        <i class="fa-solid fa-bolt me-1"></i> Trigger Batch Generation
+                    </button>
+                </form>
+                <a href="{{ url_for('admin.index') }}" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Admin Portal</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="glass-card p-3 mb-4 border-0 shadow-sm">
+        <form method="GET" class="row g-2 align-items-center">
+            <div class="col-12 col-md-4">
+                <input type="text" name="q" value="{{ search_query }}" class="form-control bg-dark text-white border-secondary" placeholder="Search question text or topic...">
+            </div>
+            <div class="col-6 col-md-3">
+                <select name="category_id" class="form-select bg-dark text-white border-secondary">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-md-3">
+                <select name="difficulty" class="form-select bg-dark text-white border-secondary text-capitalize">
+                    <option value="">All Difficulties</option>
+                    {% for lvl in ['foundation', 'beginner', 'intermediate', 'advanced', 'expert', 'master'] %}
+                    <option value="{{ lvl }}" {% if difficulty == lvl %}selected{% endif %}>{{ lvl|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-md-2">
+                <button type="submit" class="btn btn-primary w-100 fw-semibold">Filter</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Questions Table -->
+    <div class="glass-card p-4 border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+                <thead>
+                    <tr class="text-secondary border-secondary">
+                        <th>ID</th>
+                        <th>Category</th>
+                        <th>Topic</th>
+                        <th>Difficulty</th>
+                        <th>Question Snippet</th>
+                        <th>Correct Option</th>
+                        <th>Source</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for q in pagination.items %}
+                    <tr>
+                        <td class="font-monospace text-muted">#{{ q.id }}</td>
+                        <td><span class="badge bg-secondary bg-opacity-20">{{ q.category.name if q.category else 'Quant' }}</span></td>
+                        <td class="fw-semibold text-white">{{ q.topic }}</td>
+                        <td><span class="badge bg-info bg-opacity-20 text-info text-capitalize">{{ q.difficulty }}</span></td>
+                        <td class="text-truncate" style="max-width: 300px;">{{ q.question_text }}</td>
+                        <td class="text-center"><span class="badge bg-success font-monospace">{{ q.correct_option }}</span></td>
+                        <td class="text-muted fs-7">{{ q.source_type }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">No questions found matching criteria.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        {% if pagination.pages > 1 %}
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <small class="text-secondary">Page {{ pagination.page }} of {{ pagination.pages }} (Total: {{ pagination.total }} questions)</small>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    {% if pagination.has_prev %}
+                    <li class="page-item"><a class="page-item link bg-dark text-white border-secondary px-3 py-1" href="{{ url_for('admin.aptitude_questions', page=pagination.prev_num, q=search_query, category_id=category_id, difficulty=difficulty) }}">Previous</a></li>
+                    {% endif %}
+                    {% if pagination.has_next %}
+                    <li class="page-item"><a class="page-item link bg-dark text-white border-secondary px-3 py-1" href="{{ url_for('admin.aptitude_questions', page=pagination.next_num, q=search_query, category_id=category_id, difficulty=difficulty) }}">Next</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

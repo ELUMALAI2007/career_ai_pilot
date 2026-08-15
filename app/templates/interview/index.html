@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}AI Mock Interview - CareerPilot AI{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="fa-solid fa-headset text-primary me-2"></i> AI Mock Interview Simulator</h2>
+        <p class="text-muted mb-0">Simulate realistic technical and behavioral interview sessions powered by Gemini LLM.</p>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="glass-card p-4 p-md-5">
+            <h4 class="fw-bold mb-4">Start New Interview Session</h4>
+            <form method="POST">
+                {{ form.hidden_tag() if form }}
+                <div class="mb-3">
+                    <label class="form-label text-muted">Target Role</label>
+                    <input type="text" name="target_role" class="form-control bg-dark text-white border-secondary" placeholder="e.g. Software Development Engineer" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted">Target Company (Optional)</label>
+                    <input type="text" name="target_company" class="form-control bg-dark text-white border-secondary" placeholder="e.g. Google, Amazon, TCS">
+                </div>
+                <div class="mb-4">
+                    <label class="form-label text-muted">Difficulty Level</label>
+                    <select name="difficulty" class="form-select bg-dark text-white border-secondary">
+                        <option value="junior">Junior / Entry Level</option>
+                        <option value="mid" selected>Mid Level</option>
+                        <option value="senior">Senior Level</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary-custom w-100">Launch AI Interview</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

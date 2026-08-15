@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Aptitude Analytics Dashboard — CareerPilot AI{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="glass-card p-4 mb-4 border-start border-success border-4 rounded-3 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold text-white mb-1"><i class="fa-solid fa-chart-pie text-success me-2"></i> Aptitude Performance Analytics</h2>
+                <p class="text-secondary mb-0">Detailed accuracy metrics, topic mastery breakdown, and historical score progression.</p>
+            </div>
+            <a href="{{ url_for('aptitude.index') }}" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Aptitude Home</a>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <!-- Score Trend Line Chart -->
+        <div class="col-12 col-lg-6">
+            <div class="glass-card p-4 h-100 border-0 shadow-sm">
+                <h5 class="fw-bold text-white mb-3"><i class="fa-solid fa-chart-line text-primary me-2"></i> Accuracy Score Trend</h5>
+                <canvas id="scoreTrendChart" height="220"></canvas>
+            </div>
+        </div>
+
+        <!-- Topic Mastery Radar Chart -->
+        <div class="col-12 col-lg-6">
+            <div class="glass-card p-4 h-100 border-0 shadow-sm">
+                <h5 class="fw-bold text-white mb-3"><i class="fa-solid fa-bullseye text-warning me-2"></i> Topic Mastery Radar</h5>
+                <canvas id="topicMasteryChart" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const trendCtx = document.getElementById('scoreTrendChart').getContext('2d');
+    new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: {{ analytics.recent_dates | tojson }},
+            datasets: [{
+                label: 'Accuracy %',
+                data: {{ analytics.recent_scores | tojson }},
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13, 110, 253, 0.15)',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: { y: { min: 0, max: 100 } }
+        }
+    });
+
+    const masteryCtx = document.getElementById('topicMasteryChart').getContext('2d');
+    new Chart(masteryCtx, {
+        type: 'radar',
+        data: {
+            labels: {{ analytics.topic_labels | tojson }},
+            datasets: [{
+                label: 'Mastery %',
+                data: {{ analytics.topic_scores | tojson }},
+                borderColor: '#ffc107',
+                backgroundColor: 'rgba(255, 193, 7, 0.25)'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: { r: { min: 0, max: 100 } }
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

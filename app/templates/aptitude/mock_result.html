@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Mock Assessment Result — CareerPilot AI{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="glass-card p-4 mb-4 border-start border-success border-4 rounded-3 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <span class="badge bg-success px-3 py-1 mb-2 rounded-pill fs-7">Test Result Report</span>
+                <h2 class="fw-bold text-white mb-1">{{ result.title }}</h2>
+                <p class="text-secondary mb-0">Completed on {{ result.completed_at.strftime('%b %d, %Y at %I:%M %p') }}</p>
+            </div>
+            <a href="{{ url_for('aptitude.mock_hub') }}" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Back to Mocks</a>
+        </div>
+    </div>
+
+    <!-- Top Summary Metrics -->
+    <div class="row g-3 mb-4">
+        <!-- Score -->
+        <div class="col-6 col-md-3">
+            <div class="glass-card p-3 text-center h-100 border-0 shadow-sm">
+                <small class="text-secondary text-uppercase fw-semibold d-block mb-1">Score</small>
+                <div class="h3 fw-bold text-primary mb-0">{{ result.score }} / {{ result.total_questions }}</div>
+                <small class="text-muted fs-7">Raw Points</small>
+            </div>
+        </div>
+        <!-- Accuracy -->
+        <div class="col-6 col-md-3">
+            <div class="glass-card p-3 text-center h-100 border-0 shadow-sm">
+                <small class="text-secondary text-uppercase fw-semibold d-block mb-1">Accuracy</small>
+                <div class="h3 fw-bold text-info mb-0">{{ result.accuracy_percentage }}%</div>
+                <small class="text-muted fs-7">Percentage Score</small>
+            </div>
+        </div>
+        <!-- Correct / Incorrect / Skipped -->
+        <div class="col-6 col-md-3">
+            <div class="glass-card p-3 text-center h-100 border-0 shadow-sm">
+                <small class="text-secondary text-uppercase fw-semibold d-block mb-1">Breakdown</small>
+                <div class="fs-6 fw-bold mb-0">
+                    <span class="text-success">{{ result.correct_count }} Correct</span> |
+                    <span class="text-danger">{{ result.incorrect_count }} Wrong</span>
+                </div>
+                <small class="text-muted fs-7">{{ result.skipped_count }} Skipped</small>
+            </div>
+        </div>
+        <!-- Time Used -->
+        <div class="col-6 col-md-3">
+            <div class="glass-card p-3 text-center h-100 border-0 shadow-sm">
+                <small class="text-secondary text-uppercase fw-semibold d-block mb-1">Time Used</small>
+                <div class="h3 fw-bold text-warning mb-0">{{ (result.time_used_seconds // 60) }}m {{ (result.time_used_seconds % 60) }}s</div>
+                <small class="text-muted fs-7">Total Duration</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Breakdown & Topic Analysis -->
+    <div class="row g-4 mb-4">
+        <!-- Category Performance -->
+        <div class="col-12 col-lg-6">
+            <div class="glass-card p-4 h-100 border-0 shadow-sm">
+                <h5 class="fw-bold text-white mb-3"><i class="fa-solid fa-chart-pie text-primary me-2"></i> Category Performance</h5>
+                {% for cat_name, scores in cat_scores.items() %}
+                {% set pct = ((scores.correct / scores.total) * 100)|round(1) if scores.total > 0 else 0 %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between text-secondary fs-7 mb-1">
+                        <strong class="text-white">{{ cat_name }}</strong>
+                        <span>{{ scores.correct }}/{{ scores.total }} ({{ pct }}%)</span>
+                    </div>
+                    <div class="progress bg-dark" style="height: 10px;">
+                        <div class="progress-bar {% if pct >= 75 %}bg-success{% elif pct >= 50 %}bg-warning{% else %}bg-danger{% endif %}" style="width: {{ pct }}%;"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Strong & Weak Topics -->
+        <div class="col-12 col-lg-6">
+            <div class="glass-card p-4 h-100 border-0 shadow-sm">
+                <h5 class="fw-bold text-white mb-3"><i class="fa-solid fa-bullseye text-warning me-2"></i> Topic Diagnostics</h5>
+                
+                <!-- Strong Topics -->
+                <div class="mb-3">
+                    <strong class="text-success d-block mb-2"><i class="fa-solid fa-circle-check me-1"></i> Strong Topics (High Accuracy):</strong>
+                    {% if strong_topics %}
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for t in strong_topics %}
+                        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-25 px-3 py-1.5 fs-7">{{ t }}</span>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <span class="text-muted fs-7">Complete more questions to surface strong topics.</span>
+                    {% endif %}
+                </div>
+
+                <!-- Weak Topics -->
+                <div>
+                    <strong class="text-danger d-block mb-2"><i class="fa-solid fa-circle-exclamation me-1"></i> Weak Topics (Targeted Practice Needed):</strong>
+                    {% if weak_topics %}
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        {% for t in weak_topics %}
+                        <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-25 px-3 py-1.5 fs-7">{{ t }}</span>
+                        {% endfor %}
+                    </div>
+                    <a href="{{ url_for('aptitude.practice_start', topic=weak_topics[0], limit=10) }}" class="btn btn-sm btn-outline-danger w-100 fw-semibold">
+                        Practice Weak Topic: {{ weak_topics[0] }}
+                    </a>
+                    {% else %}
+                    <span class="text-muted fs-7">No weak topics identified in this attempt! Excellent consistency.</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Learn {{ topic_name }} — CareerPilot AI{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="glass-card p-4 mb-4 border-start border-primary border-4 rounded-3 shadow-sm">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <span class="badge bg-primary px-3 py-1 mb-2 rounded-pill fs-7">{{ category_name }}</span>
+                <h1 class="h2 fw-bold text-white mb-1">{{ topic_name }}</h1>
+                <p class="text-secondary mb-0">Placement concept guide, standard formulas, shortcuts, and practice sets.</p>
+            </div>
+            <a href="{{ url_for('aptitude.learn') }}" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> All Topics</a>
+        </div>
+    </div>
+
+    <!-- Structured Learning Content Grid -->
+    <div class="row g-4 mb-4">
+        <!-- Concept Overview -->
+        <div class="col-12 col-lg-6">
+            <div class="glass-card p-4 h-100 border-0 shadow-sm">
+                <h5 class="fw-bold text-white mb-3"><i class="fa-solid fa-lightbulb text-warning me-2"></i> Concept & Fundamentals</h5>
+                <p class="text-secondary fs-7 leading-relaxed mb-3">
+                    {{ topic_name }} problems assess your quantitative and analytical problem-solving speed. Master the core principles, baseline relationships, and variable relationships before attempting high-speed shortcuts.
+                </p>
+                <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary border-opacity-25 mb-3">
+                    <strong class="text-info d-block mb-1">Standard Definition & Scope:</strong>
+                    <span class="text-muted fs-7">Standard placement concepts based on general aptitude principles commonly encountered in campus recruitment drives.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulas & Shortcuts -->
+        <div class="col-12 col-lg-6">
+            <div class="glass-card p-4 h-100 border-0 shadow-sm">
+                <h5 class="fw-bold text-white mb-3"><i class="fa-solid fa-square-root-variable text-info me-2"></i> Important Formulas & Shortcuts</h5>
+                <ul class="list-group list-group-flush bg-transparent">
+                    <li class="list-group-item bg-transparent text-secondary border-secondary border-opacity-25">
+                        <strong class="text-white">Core Formula:</strong> Apply fundamental mathematical definitions directly.
+                    </li>
+                    <li class="list-group-item bg-transparent text-secondary border-secondary border-opacity-25">
+                        <strong class="text-white">Quick Trick:</strong> Ratio scaling & fraction equivalences for 2x calculation speed.
+                    </li>
+                    <li class="list-group-item bg-transparent text-secondary border-secondary border-opacity-25">
+                        <strong class="text-white">Common Mistake:</strong> Avoid misinterpreting baseline values or unit discrepancies.
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6 Difficulty Level Entry Points -->
+    <div class="glass-card p-4 mb-4 border-0 shadow-sm">
+        <h5 class="fw-bold text-white mb-4"><i class="fa-solid fa-layer-group text-primary me-2"></i> Choose Difficulty Practice Level</h5>
+        <div class="row g-3">
+            {% for lvl in levels %}
+            <div class="col-12 col-md-4 col-xl-2">
+                <div class="glass-card p-3 text-center h-100 border-0 hover-lift shadow-sm d-flex flex-column justify-content-between">
+                    <div>
+                        <span class="badge bg-secondary bg-opacity-20 text-capitalize mb-2">Level {{ loop.index0 }}</span>
+                        <h6 class="fw-bold text-white mb-1 text-capitalize">{{ lvl }}</h6>
+                        <small class="text-muted fs-7 d-block mb-3">
+                            {% if lvl == 'foundation' %}Single-step formula application
+                            {% elif lvl == 'beginner' %}Simple application & confidence
+                            {% elif lvl == 'intermediate' %}Multi-step problems
+                            {% elif lvl == 'advanced' %}Placement-style speed problems
+                            {% elif lvl == 'expert' %}Complex multi-concept reasoning
+                            {% else %}Competition-level top challenge{% endif %}
+                        </small>
+                    </div>
+                    <a href="{{ url_for('aptitude.practice_start', topic=topic_name, difficulty=lvl, limit=10) }}" class="btn btn-sm btn-primary w-100 fw-semibold">
+                        Start Level {{ loop.index0 }}
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

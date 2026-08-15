@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Resume Version Comparison Matrix - CareerPilot AI{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <a href="{{ url_for('resume.index') }}" class="text-muted text-decoration-none small mb-1 d-inline-block">
+            <i class="fa-solid fa-arrow-left me-1"></i> Back to Resume Portal
+        </a>
+        <h2 class="fw-bold mb-1">
+            <i class="fa-solid fa-code-compare text-info me-2"></i> Side-by-Side Version Comparison Matrix
+        </h2>
+        <p class="text-muted mb-0">Compare score improvements, added/removed skills, and keyword density changes across iterations.</p>
+    </div>
+</div>
+
+<!-- Comparison Summary Score Matrix -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="glass-card p-4 border-secondary h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="badge bg-secondary fs-6">Baseline Version (v{{ matrix.version_1.version_number }})</span>
+                <span class="text-muted small">{{ matrix.version_1.uploaded_at }}</span>
+            </div>
+            <h5 class="fw-bold text-light mb-3">{{ matrix.version_1.filename }}</h5>
+            
+            <div class="row g-2 text-center">
+                <div class="col-6">
+                    <div class="p-2 bg-dark rounded border border-secondary">
+                        <div class="fw-bold text-primary fs-4">{{ matrix.version_1.scores.overall }}</div>
+                        <div class="text-muted extra-small">Overall Score</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-2 bg-dark rounded border border-secondary">
+                        <div class="fw-bold text-info fs-4">{{ matrix.version_1.scores.ats }}</div>
+                        <div class="text-muted extra-small">ATS Score</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-2 bg-dark rounded border border-secondary">
+                        <div class="fw-bold text-success fs-4">{{ matrix.version_1.scores.quality }}</div>
+                        <div class="text-muted extra-small">Quality Score</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-2 bg-dark rounded border border-secondary">
+                        <div class="fw-bold text-warning fs-4">{{ matrix.version_1.scores.job_match }}</div>
+                        <div class="text-muted extra-small">Job Match</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="glass-card p-4 border-primary h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="badge bg-primary fs-6">Updated Version (v{{ matrix.version_2.version_number }})</span>
+                <span class="text-muted small">{{ matrix.version_2.uploaded_at }}</span>
+            </div>
+            <h5 class="fw-bold text-light mb-3">{{ matrix.version_2.filename }}</h5>
+            
+            <div class="row g-2 text-center">
+                <div class="col-6">
+                    <div class="p-2 bg-dark rounded border border-primary">
+                        <div class="fw-bold text-primary fs-4">{{ matrix.version_2.scores.overall }}</div>
+                        <div class="text-muted extra-small">Overall Score</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-2 bg-dark rounded border border-primary">
+                        <div class="fw-bold text-info fs-4">{{ matrix.version_2.scores.ats }}</div>
+                        <div class="text-muted extra-small">ATS Score</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-2 bg-dark rounded border border-primary">
+                        <div class="fw-bold text-success fs-4">{{ matrix.version_2.scores.quality }}</div>
+                        <div class="text-muted extra-small">Quality Score</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-2 bg-dark rounded border border-primary">
+                        <div class="fw-bold text-warning fs-4">{{ matrix.version_2.scores.job_match }}</div>
+                        <div class="text-muted extra-small">Job Match</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Score Progress Deltas -->
+<div class="glass-card p-4 mb-4">
+    <h5 class="fw-bold mb-3"><i class="fa-solid fa-chart-line text-success me-2"></i> Version Progress Deltas</h5>
+    <div class="row g-3 text-center">
+        <div class="col-md-3">
+            <div class="p-3 bg-dark rounded border border-secondary">
+                <div class="text-muted small">Overall Score Delta</div>
+                <div class="fw-bold fs-3 {% if matrix.deltas.overall_delta >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {% if matrix.deltas.overall_delta >= 0 %}+{% endif %}{{ matrix.deltas.overall_delta }} pts
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="p-3 bg-dark rounded border border-secondary">
+                <div class="text-muted small">ATS Score Delta</div>
+                <div class="fw-bold fs-3 {% if matrix.deltas.ats_delta >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {% if matrix.deltas.ats_delta >= 0 %}+{% endif %}{{ matrix.deltas.ats_delta }} pts
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="p-3 bg-dark rounded border border-secondary">
+                <div class="text-muted small">Quality Score Delta</div>
+                <div class="fw-bold fs-3 {% if matrix.deltas.quality_delta >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {% if matrix.deltas.quality_delta >= 0 %}+{% endif %}{{ matrix.deltas.quality_delta }} pts
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="p-3 bg-dark rounded border border-secondary">
+                <div class="text-muted small">Job Match Delta</div>
+                <div class="fw-bold fs-3 {% if matrix.deltas.job_match_delta >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {% if matrix.deltas.job_match_delta >= 0 %}+{% endif %}{{ matrix.deltas.job_match_delta }} pts
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Skill & Keyword Modifications -->
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="glass-card p-4 bg-dark border-success h-100">
+            <h6 class="fw-bold text-success mb-3"><i class="fa-solid fa-plus-circle me-2"></i> Added Technical Skills (v{{ matrix.version_2.version_number }})</h6>
+            <div class="d-flex flex-wrap gap-2">
+                {% for sk in matrix.deltas.added_skills %}
+                    <span class="badge bg-success bg-opacity-25 text-success border border-success fs-6 px-3 py-2">+ {{ sk }}</span>
+                {% else %}
+                    <span class="text-muted small">No new skills added</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="glass-card p-4 bg-dark border-danger h-100">
+            <h6 class="fw-bold text-danger mb-3"><i class="fa-solid fa-minus-circle me-2"></i> Removed Skills (v{{ matrix.version_2.version_number }})</h6>
+            <div class="d-flex flex-wrap gap-2">
+                {% for sk in matrix.deltas.removed_skills %}
+                    <span class="badge bg-danger bg-opacity-25 text-danger border border-danger fs-6 px-3 py-2">- {{ sk }}</span>
+                {% else %}
+                    <span class="text-muted small">No skills removed</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

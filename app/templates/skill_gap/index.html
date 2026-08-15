@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Skill Gap Analysis - CareerPilot AI{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="fa-solid fa-sliders text-primary me-2"></i> Skill Gap & Role Matching</h2>
+        <p class="text-muted mb-0">Discover missing technical competencies against target role benchmarks.</p>
+    </div>
+</div>
+
+<div class="glass-card p-4">
+    <h5 class="fw-bold mb-3">Skill Gap Assessment</h5>
+    <p class="text-muted mb-4">Select your target position to generate a missing skill heatmap.</p>
+    <!-- TODO: Skill Gap comparison table -->
+    <div class="alert alert-info border-0">
+        Target Role: <strong>Software Development Engineer</strong> | Match Score: <strong>78%</strong>
+    </div>
+</div>
+{% endblock %}

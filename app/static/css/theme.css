@@ -1,0 +1,400 @@
+/* CareerPilot AI Design System & Theme Tokens */
+
+/* Light Theme Defaults */
+:root, [data-theme="light"] {
+    --primary-color: #4f46e5;
+    --primary-hover: #4338ca;
+    --secondary-color: #0284c7;
+    --accent-color: #d97706;
+    
+    --bg-body: #f8fafc;
+    --bg-gradient: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    
+    --card-bg: rgba(255, 255, 255, 0.9);
+    --card-border: rgba(203, 213, 225, 0.8);
+    --card-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.08);
+
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
+    
+    --input-bg: #ffffff;
+    --input-text: #0f172a;
+    --input-border: #cbd5e1;
+    --input-placeholder: #94a3b8;
+    --input-focus-border: #6366f1;
+    --input-focus-ring: rgba(99, 102, 241, 0.2);
+
+    --navbar-bg: rgba(255, 255, 255, 0.95);
+    --navbar-border: #e2e8f0;
+    --navbar-text: #0f172a;
+
+    --sidebar-bg: rgba(255, 255, 255, 0.95);
+    --sidebar-border: #e2e8f0;
+    --sidebar-link: #475569;
+    --sidebar-link-hover: #4f46e5;
+    --sidebar-link-active-bg: rgba(79, 70, 229, 0.1);
+
+    --dropdown-bg: #ffffff;
+    --dropdown-text: #0f172a;
+    --dropdown-border: #cbd5e1;
+    --dropdown-hover: #f1f5f9;
+
+    --modal-bg: #ffffff;
+    --modal-text: #0f172a;
+    --modal-border: #e2e8f0;
+
+    --table-bg: transparent;
+    --table-text: #0f172a;
+    --table-border: #e2e8f0;
+    --table-hover-bg: rgba(241, 245, 249, 0.8);
+
+    --border-glass: rgba(0, 0, 0, 0.08);
+    --radius-lg: 16px;
+    --radius-md: 10px;
+    --glass-blur: blur(12px);
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark Theme */
+[data-theme="dark"] {
+    --primary-color: #6366f1;
+    --primary-hover: #4f46e5;
+    --secondary-color: #06b6d4;
+    --accent-color: #f59e0b;
+
+    --bg-body: #0f172a;
+    --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+
+    --card-bg: rgba(30, 41, 59, 0.75);
+    --card-border: rgba(255, 255, 255, 0.12);
+    --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+
+    --input-bg: #1e293b;
+    --input-text: #f8fafc;
+    --input-border: #334155;
+    --input-placeholder: #64748b;
+    --input-focus-border: #818cf8;
+    --input-focus-ring: rgba(129, 140, 248, 0.25);
+
+    --navbar-bg: rgba(15, 23, 42, 0.85);
+    --navbar-border: rgba(255, 255, 255, 0.1);
+    --navbar-text: #f8fafc;
+
+    --sidebar-bg: rgba(15, 23, 42, 0.95);
+    --sidebar-border: rgba(255, 255, 255, 0.1);
+    --sidebar-link: #94a3b8;
+    --sidebar-link-hover: #ffffff;
+    --sidebar-link-active-bg: rgba(99, 102, 241, 0.2);
+
+    --dropdown-bg: #1e293b;
+    --dropdown-text: #f8fafc;
+    --dropdown-border: #334155;
+    --dropdown-hover: #334155;
+
+    --modal-bg: #1e293b;
+    --modal-text: #f8fafc;
+    --modal-border: #334155;
+
+    --table-bg: transparent;
+    --table-text: #f8fafc;
+    --table-border: #334155;
+    --table-hover-bg: rgba(51, 65, 85, 0.5);
+
+    --border-glass: rgba(255, 255, 255, 0.1);
+}
+
+/* System Preference Automatic Dark Fallback */
+@media (prefers-color-scheme: dark) {
+    [data-theme="system"] {
+        --primary-color: #6366f1;
+        --primary-hover: #4f46e5;
+        --secondary-color: #06b6d4;
+        --accent-color: #f59e0b;
+
+        --bg-body: #0f172a;
+        --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+
+        --card-bg: rgba(30, 41, 59, 0.75);
+        --card-border: rgba(255, 255, 255, 0.12);
+        --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+
+        --text-primary: #f8fafc;
+        --text-secondary: #cbd5e1;
+        --text-muted: #94a3b8;
+
+        --input-bg: #1e293b;
+        --input-text: #f8fafc;
+        --input-border: #334155;
+        --input-placeholder: #64748b;
+        --input-focus-border: #818cf8;
+        --input-focus-ring: rgba(129, 140, 248, 0.25);
+
+        --navbar-bg: rgba(15, 23, 42, 0.85);
+        --navbar-border: rgba(255, 255, 255, 0.1);
+        --navbar-text: #f8fafc;
+
+        --sidebar-bg: rgba(15, 23, 42, 0.95);
+        --sidebar-border: rgba(255, 255, 255, 0.1);
+        --sidebar-link: #94a3b8;
+        --sidebar-link-hover: #ffffff;
+        --sidebar-link-active-bg: rgba(99, 102, 241, 0.2);
+
+        --dropdown-bg: #1e293b;
+        --dropdown-text: #f8fafc;
+        --dropdown-border: #334155;
+        --dropdown-hover: #334155;
+
+        --modal-bg: #1e293b;
+        --modal-text: #f8fafc;
+        --modal-border: #334155;
+
+        --table-bg: transparent;
+        --table-text: #f8fafc;
+        --table-border: #334155;
+        --table-hover-bg: rgba(51, 65, 85, 0.5);
+
+        --border-glass: rgba(255, 255, 255, 0.1);
+    }
+}
+
+/* Global Reset & Theme Styling */
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg-gradient);
+    color: var(--text-primary);
+    min-height: 100vh;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* Global Contrast Overrides for Text */
+h1, h2, h3, h4, h5, h6, .text-body {
+    color: var(--text-primary) !important;
+}
+
+p, .text-secondary {
+    color: var(--text-secondary) !important;
+}
+
+.text-muted, small.text-muted {
+    color: var(--text-muted) !important;
+}
+
+/* Glassmorphism Card Component */
+.glass-card {
+    background: var(--card-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--card-shadow);
+    transition: var(--transition-smooth);
+}
+
+.glass-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary-color);
+}
+
+/* Form Controls & Text Visibility Fixes */
+.form-control, .form-select {
+    background-color: var(--input-bg) !important;
+    color: var(--input-text) !important;
+    border: 1px solid var(--input-border) !important;
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    background-color: var(--input-bg) !important;
+    color: var(--input-text) !important;
+    border-color: var(--input-focus-border) !important;
+    box-shadow: 0 0 0 0.25rem var(--input-focus-ring) !important;
+}
+
+.form-control::placeholder {
+    color: var(--input-placeholder) !important;
+    opacity: 1;
+}
+
+.form-label {
+    color: var(--text-secondary) !important;
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+
+.input-group-text {
+    background-color: var(--input-bg) !important;
+    color: var(--text-secondary) !important;
+    border-color: var(--input-border) !important;
+}
+
+/* Custom Buttons */
+.btn-primary-custom {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    border: none;
+    color: #ffffff !important;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    padding: 10px 24px;
+    transition: var(--transition-smooth);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-primary-custom:hover {
+    opacity: 0.94;
+    transform: translateY(-1px);
+    color: #ffffff !important;
+}
+
+/* Official Google Sign-In Button */
+.btn-google {
+    background-color: var(--input-bg) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--input-border) !important;
+    font-weight: 500;
+    border-radius: var(--radius-md);
+    padding: 10px 20px;
+    transition: var(--transition-smooth);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.btn-google:hover {
+    background-color: var(--dropdown-hover) !important;
+    border-color: var(--primary-color) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Navigation & Header Components */
+.navbar-custom {
+    background: var(--navbar-bg) !important;
+    border-bottom: 1px solid var(--navbar-border);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+}
+
+.navbar-custom .nav-link {
+    color: var(--navbar-text) !important;
+}
+
+.sidebar-wrapper {
+    background: var(--sidebar-bg) !important;
+    border-right: 1px solid var(--sidebar-border);
+    min-height: 100vh;
+}
+
+.sidebar-link {
+    color: var(--sidebar-link) !important;
+    padding: 12px 20px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    transition: var(--transition-smooth);
+    font-weight: 500;
+}
+
+.sidebar-link:hover, .sidebar-link.active {
+    color: var(--sidebar-link-hover) !important;
+    background: var(--sidebar-link-active-bg) !important;
+    border-left: 4px solid var(--primary-color);
+}
+
+/* Dropdown Menus */
+.dropdown-menu {
+    background-color: var(--dropdown-bg) !important;
+    border: 1px solid var(--dropdown-border) !important;
+    color: var(--dropdown-text) !important;
+    box-shadow: var(--card-shadow);
+}
+
+.dropdown-item {
+    color: var(--dropdown-text) !important;
+    padding: 8px 16px;
+    transition: background-color 0.2s ease;
+}
+
+.dropdown-item:hover, .dropdown-item:focus {
+    background-color: var(--dropdown-hover) !important;
+    color: var(--dropdown-text) !important;
+}
+
+.dropdown-divider {
+    border-top-color: var(--input-border) !important;
+}
+
+/* Modals */
+.modal-content {
+    background-color: var(--modal-bg) !important;
+    color: var(--modal-text) !important;
+    border: 1px solid var(--modal-border) !important;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--card-shadow);
+}
+
+/* Tables */
+.table {
+    color: var(--table-text) !important;
+    border-color: var(--table-border) !important;
+}
+
+.table > :not(caption) > * > * {
+    background-color: transparent !important;
+    color: var(--table-text) !important;
+    border-bottom-color: var(--table-border) !important;
+}
+
+.table-hover > tbody > tr:hover > * {
+    background-color: var(--table-hover-bg) !important;
+}
+
+/* Dividers & Utility Classes */
+.divider-with-text {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: 1.25rem 0;
+}
+
+.divider-with-text::before,
+.divider-with-text::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--input-border);
+}
+
+.divider-with-text:not(:empty)::before {
+    margin-right: .75em;
+}
+
+.divider-with-text:not(:empty)::after {
+    margin-left: .75em;
+}
+
+/* Password Toggle Icon */
+.password-toggle-btn {
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 0 12px;
+}
+
+.password-toggle-btn:hover {
+    color: var(--text-primary);
+}

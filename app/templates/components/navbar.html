@@ -1,0 +1,103 @@
+<!-- Top Navigation Bar Partial -->
+<nav class="navbar navbar-expand-lg navbar-custom px-4 py-2">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold d-flex align-items-center gap-2 text-primary-theme" href="{{ url_for('dashboard.index') if current_user.is_authenticated else url_for('auth.login') }}">
+            <i class="fa-solid fa-compass text-primary fs-4"></i>
+            <span class="tracking-wide">CAREER PROSPECTS</span>
+        </a>
+        
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarContent">
+            <ul class="navbar-nav ms-auto align-items-center gap-2 gap-lg-3 mt-3 mt-lg-0">
+                
+                <!-- Theme Switcher Dropdown -->
+                <li class="nav-item dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle d-flex align-items-center gap-2 px-3 py-1-5 rounded-pill" 
+                            id="themeDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Change Theme Mode">
+                        <i class="fa-solid fa-circle-half-stroke text-primary"></i>
+                        <span class="d-none d-sm-inline">Theme</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="themeDropdown">
+                        <li>
+                            <button class="dropdown-item d-flex align-items-center justify-content-between" 
+                                    data-theme-value="light" onclick="setTheme('light')">
+                                <span><i class="fa-regular fa-sun text-warning me-2"></i> Light</span>
+                                <i class="fa-solid fa-check text-primary ms-3 d-none"></i>
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item d-flex align-items-center justify-content-between" 
+                                    data-theme-value="dark" onclick="setTheme('dark')">
+                                <span><i class="fa-regular fa-moon text-info me-2"></i> Dark</span>
+                                <i class="fa-solid fa-check text-primary ms-3 d-none"></i>
+                            </button>
+                        </li>
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <li>
+                            <button class="dropdown-item d-flex align-items-center justify-content-between" 
+                                    data-theme-value="system" onclick="setTheme('system')">
+                                <span><i class="fa-solid fa-desktop text-secondary me-2"></i> System Default</span>
+                                <i class="fa-solid fa-check text-primary ms-3 d-none"></i>
+                            </button>
+                        </li>
+                    </ul>
+                </li>
+
+                {% if current_user.is_authenticated %}
+                    <!-- Admin Panel Access Link (Role Protected) -->
+                    {% if current_user.is_admin %}
+                        <li class="nav-item">
+                            <a class="btn btn-sm btn-outline-warning d-flex align-items-center gap-2 px-3 py-1-5 rounded-pill" href="{{ url_for('admin.index') }}">
+                                <i class="fa-solid fa-shield-halved"></i>
+                                <span>Admin Portal</span>
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    <!-- Notifications Dropdown -->
+                    <li class="nav-item">
+                        <a class="nav-link position-relative px-2 text-secondary" href="{{ url_for('notification.index') }}" title="Notifications">
+                            <i class="fa-regular fa-bell fs-5"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+                        </a>
+                    </li>
+
+                    <!-- User Account Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 text-body py-1" href="#" data-bs-toggle="dropdown" aria-expanded="false">
+                            {% if current_user.profile_picture %}
+                                <img src="{{ current_user.profile_picture }}" alt="Avatar" class="rounded-circle" width="32" height="32" style="object-fit: cover;">
+                            {% else %}
+                                <div class="rounded-circle bg-primary bg-opacity-20 text-primary d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; font-size: 0.85rem;">
+                                    {{ current_user.full_name[:1].upper() if current_user.full_name else 'U' }}
+                                </div>
+                            {% endif %}
+                            <span class="fw-semibold">{{ current_user.full_name }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                            <li class="px-3 py-2 border-bottom">
+                                <div class="fw-bold text-body small">{{ current_user.full_name }}</div>
+                                <div class="text-secondary fs-xs text-truncate" style="max-width: 180px;">{{ current_user.email }}</div>
+                            </li>
+                            {% if current_user.is_admin %}
+                                <li><a class="dropdown-item text-warning" href="{{ url_for('admin.requests') }}"><i class="fa-solid fa-user-shield me-2"></i> Access Requests</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            <li><a class="dropdown-item" href="{{ url_for('profile.index') }}"><i class="fa-regular fa-user me-2"></i> My Profile</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('settings.index') }}"><i class="fa-solid fa-gear me-2"></i> Account Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="fa-solid fa-right-from-bracket me-2"></i> Logout</a></li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <li class="nav-item"><a class="btn btn-outline-secondary btn-sm px-3" href="{{ url_for('auth.login') }}">Sign In</a></li>
+                    <li class="nav-item"><a class="btn btn-primary-custom btn-sm px-3" href="{{ url_for('auth.register') }}">Create Account</a></li>
+                {% endif %}
+
+            </ul>
+        </div>
+    </div>
+</nav>

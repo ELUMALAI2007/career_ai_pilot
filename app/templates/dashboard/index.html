@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - CareerPilot AI{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Welcome back, {{ current_user.full_name }}! 👋</h2>
+        <p class="text-muted mb-0">Here is your placement preparation snapshot for today.</p>
+    </div>
+    <a href="{{ url_for('interview.index') }}" class="btn btn-primary-custom">Start AI Mock Interview</a>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="glass-card p-4">
+            <h6 class="text-muted mb-2">Readiness Score</h6>
+            <h2 class="fw-bold text-success mb-0">{{ summary.analytics.overall_readiness }}%</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card p-4">
+            <h6 class="text-muted mb-2">Aptitude Score</h6>
+            <h2 class="fw-bold text-primary mb-0">{{ summary.analytics.aptitude_score }}%</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card p-4">
+            <h6 class="text-muted mb-2">Coding Score</h6>
+            <h2 class="fw-bold text-info mb-0">{{ summary.analytics.coding_score }}%</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card p-4">
+            <h6 class="text-muted mb-2">Interview Rating</h6>
+            <h2 class="fw-bold text-warning mb-0">{{ summary.analytics.interview_score }}%</h2>
+        </div>
+    </div>
+</div>
+{% endblock %}

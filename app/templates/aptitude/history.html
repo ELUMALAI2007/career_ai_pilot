@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}My Attempt History — CareerPilot AI{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="glass-card p-4 mb-4 border-start border-secondary border-4 rounded-3 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold text-white mb-1"><i class="fa-solid fa-history text-secondary me-2"></i> My Attempt & Exam History</h2>
+                <p class="text-secondary mb-0">Track all past practice sessions and mock examination results.</p>
+            </div>
+            <a href="{{ url_for('aptitude.index') }}" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Aptitude Home</a>
+        </div>
+    </div>
+
+    <!-- Mock Examination Logs -->
+    <div class="glass-card p-4 mb-4 border-0 shadow-sm">
+        <h5 class="fw-bold text-white mb-3"><i class="fa-solid fa-clock text-danger me-2"></i> Timed Mock Examination Attempts</h5>
+        {% if not results %}
+        <p class="text-secondary mb-0">No completed mock examinations logged yet.</p>
+        {% else %}
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+                <thead>
+                    <tr class="text-secondary border-secondary">
+                        <th>Date</th>
+                        <th>Exam Title</th>
+                        <th>Score</th>
+                        <th>Accuracy</th>
+                        <th>Time Used</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in results %}
+                    <tr>
+                        <td class="text-muted fs-7">{{ r.completed_at.strftime('%b %d, %Y') }}</td>
+                        <td class="fw-semibold text-white">{{ r.title }}</td>
+                        <td class="font-monospace">{{ r.score }} / {{ r.total_questions }}</td>
+                        <td>
+                            <span class="badge {% if r.accuracy_percentage >= 80 %}bg-success{% elif r.accuracy_percentage >= 60 %}bg-warning{% else %}bg-danger{% endif %}">
+                                {{ r.accuracy_percentage }}%
+                            </span>
+                        </td>
+                        <td class="text-muted fs-7">{{ (r.time_used_seconds // 60) }}m {{ (r.time_used_seconds % 60) }}s</td>
+                        <td>
+                            <a href="{{ url_for('aptitude.mock_result', result_id=r.id) }}" class="btn btn-sm btn-outline-info">View Report</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
