@@ -1,39 +1,435 @@
 {% extends "base.html" %}
-{% block title %}Detailed Performance Analytics - CareerPilot AI{% endblock %}
+{% block title %}Placement Intelligence Dashboard — CareerPilot AI{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<!-- Top Header & Hero Summary -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
     <div>
         <h2 class="fw-bold mb-1"><i class="fa-solid fa-chart-pie text-primary me-2"></i> Detailed Performance Analytics</h2>
-        <p class="text-muted mb-0">Track quantitative progress across aptitude, coding, communication, and mock interviews.</p>
+        <p class="text-muted mb-0">
+            Personalized Placement Intelligence Dashboard for <span class="text-light fw-bold">{{ intelligence.user_name }}</span> | 
+            Last Updated: <span class="text-info">{{ intelligence.last_updated }}</span>
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <form method="POST" action="{{ url_for('analytics.refresh') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit" class="btn btn-outline-secondary rounded-pill px-3">
+                <i class="fa-solid fa-rotate me-1"></i> Refresh Analytics
+            </button>
+        </form>
+        <a href="{{ url_for('analytics.download_report') }}" class="btn btn-primary-custom rounded-pill px-4">
+            <i class="fa-solid fa-file-pdf me-2"></i> Download PDF Report
+        </a>
     </div>
 </div>
 
-<div class="row g-4">
-    <div class="col-md-6">
-        <div class="glass-card p-4">
-            <h5 class="fw-bold mb-3">Placement Competency Radar</h5>
-            <canvas id="competencyRadarCanvas" height="250"></canvas>
+<!-- Hero Placement Readiness Banner -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="glass-card p-4 h-100 d-flex flex-column justify-content-between">
+            <div>
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <span class="text-muted small fw-bold text-uppercase tracking-wider">OVERALL PLACEMENT READINESS SCORE</span>
+                        {% if intelligence.is_provisional %}
+                            <span class="badge bg-warning text-dark ms-2"><i class="fa-solid fa-circle-exclamation me-1"></i> Provisional Rating</span>
+                        {% endif %}
+                    </div>
+                    <span class="badge bg-dark border border-secondary text-info fs-6 px-3 py-2 rounded-pill">
+                        <i class="fa-solid fa-shield-halved me-1"></i> Confidence: {{ intelligence.confidence }}
+                    </span>
+                </div>
+                
+                <div class="d-flex align-items-baseline gap-3 my-2">
+                    <h1 class="display-3 fw-bold text-primary mb-0">{{ intelligence.overall_score }}<span class="fs-4 text-muted">/100</span></h1>
+                    <div>
+                        <span class="{{ intelligence.status_badge }} px-3 py-2 fs-6 rounded-pill mb-1 d-inline-block">{{ intelligence.placement_status }}</span>
+                        <p class="text-muted small mb-0">{{ intelligence.status_desc }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pt-3 border-top border-secondary mt-3">
+                <small class="text-muted">
+                    <i class="fa-solid fa-circle-info text-info me-1"></i> 
+                    <b>Note:</b> This readiness score is calculated using active assessment modules ({{ intelligence.active_modules_count }}/{{ intelligence.total_modules_count }} completed). It is an internal preparation indicator, not a legal guarantee of employment.
+                </small>
+            </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="glass-card p-4">
-            <h5 class="fw-bold mb-3">Overall Preparation Score</h5>
-            <div class="text-center py-4">
-                <h1 class="display-2 fw-bold text-success">{{ summary.overall_readiness }}%</h1>
-                <p class="text-muted">Placement Readiness Rating</p>
+    
+    <!-- Quick Intelligence Callout Card -->
+    <div class="col-lg-4">
+        <div class="glass-card p-4 h-100 d-flex flex-column justify-content-between bg-dark bg-opacity-40">
+            <div>
+                <h5 class="fw-bold mb-3"><i class="fa-solid fa-compass-drafting text-warning me-2"></i> Placement Status</h5>
+                <div class="p-3 bg-dark rounded border border-secondary mb-3">
+                    <div class="text-muted small">Top Target Alignment</div>
+                    <div class="fw-bold text-success fs-5">{{ intelligence.role_suitability[0].title if intelligence.role_suitability else 'Software Engineer' }}</div>
+                    <div class="small text-info">{{ intelligence.role_suitability[0].match_pct if intelligence.role_suitability else 75.0 }}% Role Skill Overlap</div>
+                </div>
+                <p class="text-muted small mb-0">
+                    <i class="fa-solid fa-bullseye text-primary me-1"></i> 
+                    <b>Am I Placement Ready?</b> 
+                    {% if intelligence.overall_score >= 75 %}
+                        <span class="text-success fw-bold">YES</span> — High evidence alignment.
+                    {% elif intelligence.overall_score >= 60 %}
+                        <span class="text-warning fw-bold">ALMOST READY</span> — 2-3 weeks of practice recommended.
+                    {% else %}
+                        <span class="text-info fw-bold">DEVELOPING</span> — Complete initial assessment modules.
+                    {% endif %}
+                </p>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Competency Radar & Multi-Module Competency Breakdown Cards -->
+<div class="row g-4 mb-4">
+    <!-- Radar Chart -->
+    <div class="col-lg-5">
+        <div class="glass-card p-4 h-100">
+            <h5 class="fw-bold mb-3"><i class="fa-solid fa-chart-line text-info me-2"></i> Competency Radar</h5>
+            <div class="py-2">
+                <canvas id="competencyRadarCanvas" height="280"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Individual Module Metric Cards -->
+    <div class="col-lg-7">
+        <div class="row g-3">
+            <!-- Aptitude Card -->
+            <div class="col-md-6">
+                <div class="glass-card p-3 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold"><i class="fa-solid fa-calculator text-primary me-2"></i> Aptitude & Logic</span>
+                        {% if intelligence.modules.aptitude.status == 'Available' %}
+                            <span class="badge bg-primary fs-6">{{ intelligence.modules.aptitude.score }}/100</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Pending</span>
+                        {% endif %}
+                    </div>
+                    {% if intelligence.modules.aptitude.status == 'Available' %}
+                        <div class="small text-muted mb-1">Accuracy: <span class="text-light fw-bold">{{ intelligence.modules.aptitude.accuracy_pct }}%</span> | Solved: <span class="text-light fw-bold">{{ intelligence.modules.aptitude.total_solved }}</span></div>
+                        <div class="extra-small text-muted">Strongest: <span class="text-success">{{ intelligence.modules.aptitude.strong_topic }}</span></div>
+                    {% else %}
+                        <p class="text-muted small mb-0">No aptitude assessments completed yet.</p>
+                        <a href="{{ url_for('aptitude.index') }}" class="btn btn-sm btn-outline-primary mt-2">Take Aptitude Test</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Coding Card -->
+            <div class="col-md-6">
+                <div class="glass-card p-3 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold"><i class="fa-solid fa-code text-success me-2"></i> Coding & DSA</span>
+                        {% if intelligence.modules.coding.status == 'Available' %}
+                            <span class="badge bg-success fs-6">{{ intelligence.modules.coding.score }}/100</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Pending</span>
+                        {% endif %}
+                    </div>
+                    {% if intelligence.modules.coding.status == 'Available' %}
+                        <div class="small text-muted mb-1">Solved: <span class="text-light fw-bold">{{ intelligence.modules.coding.problems_solved }}</span> | Success: <span class="text-light fw-bold">{{ intelligence.modules.coding.success_rate_pct }}%</span></div>
+                        <div class="extra-small text-muted">Languages: <span class="text-info">{{ intelligence.modules.coding.languages | join(', ') }}</span></div>
+                    {% else %}
+                        <p class="text-muted small mb-0">No coding problems submitted yet.</p>
+                        <a href="{{ url_for('coding.index') }}" class="btn btn-sm btn-outline-success mt-2">Practice Coding</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Communication Card -->
+            <div class="col-md-6">
+                <div class="glass-card p-3 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold"><i class="fa-solid fa-comments text-info me-2"></i> Communication</span>
+                        {% if intelligence.modules.communication.status == 'Available' %}
+                            <span class="badge bg-info text-dark fs-6">{{ intelligence.modules.communication.score }}/100</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Pending</span>
+                        {% endif %}
+                    </div>
+                    {% if intelligence.modules.communication.status == 'Available' %}
+                        <div class="small text-muted mb-1">Grammar: <span class="text-light fw-bold">{{ intelligence.modules.communication.grammar_score }}</span> | Clarity: <span class="text-light fw-bold">{{ intelligence.modules.communication.clarity_score }}</span></div>
+                        <div class="extra-small text-muted">Sessions: <span class="text-light">{{ intelligence.modules.communication.session_count }}</span></div>
+                    {% else %}
+                        <p class="text-muted small mb-0">No communication practice logged.</p>
+                        <a href="{{ url_for('communication.index') }}" class="btn btn-sm btn-outline-info mt-2">Practice Soft Skills</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Mock Interview Card -->
+            <div class="col-md-6">
+                <div class="glass-card p-3 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold"><i class="fa-solid fa-user-tie text-warning me-2"></i> Mock Interview</span>
+                        {% if intelligence.modules.interview.status == 'Available' %}
+                            <span class="badge bg-warning text-dark fs-6">{{ intelligence.modules.interview.score }}/100</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Pending</span>
+                        {% endif %}
+                    </div>
+                    {% if intelligence.modules.interview.status == 'Available' %}
+                        <div class="small text-muted mb-1">Completed: <span class="text-light fw-bold">{{ intelligence.modules.interview.completed_interviews }}</span> sessions</div>
+                        <div class="extra-small text-muted">Technical Rating: <span class="text-warning">{{ intelligence.modules.interview.avg_technical_score }}</span></div>
+                    {% else %}
+                        <p class="text-muted small mb-0">No mock interviews completed.</p>
+                        <a href="{{ url_for('interview.index') }}" class="btn btn-sm btn-outline-warning mt-2">Start Mock Interview</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Resume ATS Card -->
+            <div class="col-md-6">
+                <div class="glass-card p-3 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold"><i class="fa-solid fa-file-contract text-primary me-2"></i> Resume & ATS</span>
+                        {% if intelligence.modules.resume.status == 'Available' %}
+                            <span class="badge bg-primary fs-6">{{ intelligence.modules.resume.score }}/100</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Not Analyzed</span>
+                        {% endif %}
+                    </div>
+                    {% if intelligence.modules.resume.status == 'Available' %}
+                        <div class="small text-muted mb-1">ATS: <span class="text-info fw-bold">{{ intelligence.modules.resume.ats_score }}</span> | Quality: <span class="text-success fw-bold">{{ intelligence.modules.resume.quality_score }}</span></div>
+                        <div class="extra-small text-muted">File: <span class="text-light">{{ intelligence.modules.resume.filename }}</span></div>
+                    {% else %}
+                        <p class="text-muted small mb-0">Resume not analyzed yet.</p>
+                        <a href="{{ url_for('resume.index') }}" class="btn btn-sm btn-outline-primary mt-2">Analyze Resume</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Preparation Consistency Card -->
+            <div class="col-md-6">
+                <div class="glass-card p-3 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold"><i class="fa-solid fa-fire text-danger me-2"></i> Preparation Consistency</span>
+                        <span class="badge bg-danger fs-6">{{ intelligence.modules.consistency.score }}/100</span>
+                    </div>
+                    <div class="small text-muted mb-1">Active Streak: <span class="text-light fw-bold">{{ intelligence.modules.consistency.streak_days }} days</span></div>
+                    <div class="extra-small text-muted">{{ intelligence.modules.consistency.active_days_desc }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Historical Trend Chart -->
+<div class="glass-card p-4 mb-4">
+    <h5 class="fw-bold mb-3"><i class="fa-solid fa-arrow-trend-up text-success me-2"></i> Performance Historical Timeline</h5>
+    <div class="py-2">
+        <canvas id="readinessTrendCanvas" height="120"></canvas>
+    </div>
+</div>
+
+<!-- Strengths vs Areas to Improve -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="glass-card p-4 h-100">
+            <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-circle-check me-2"></i> Strongest Core Areas</h5>
+            <ul class="list-group list-group-flush bg-transparent">
+                {% for st in intelligence.strengths %}
+                    <li class="list-group-item bg-transparent text-light border-secondary px-0">
+                        <div class="fw-bold text-success"><i class="fa-solid fa-check me-2"></i>{{ st.title }}</div>
+                        <div class="small text-muted">{{ st.desc }}</div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="glass-card p-4 h-100">
+            <h5 class="fw-bold text-warning mb-3"><i class="fa-solid fa-triangle-exclamation me-2"></i> Areas Needing Improvement</h5>
+            <ul class="list-group list-group-flush bg-transparent">
+                {% for wk in intelligence.weaknesses %}
+                    <li class="list-group-item bg-transparent text-light border-secondary px-0">
+                        <div class="fw-bold text-warning">
+                            <span class="badge bg-warning text-dark me-2">{{ wk.priority }}</span>{{ wk.title }}
+                        </div>
+                        <div class="small text-muted">{{ wk.desc }}</div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Target Career Role Suitability & Academic Eligibility -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-7">
+        <div class="glass-card p-4 h-100">
+            <h5 class="fw-bold mb-3"><i class="fa-solid fa-crosshairs text-primary me-2"></i> Target Career Role Suitability Alignment</h5>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0">
+                    <thead>
+                        <tr class="text-muted">
+                            <th>Career Role</th>
+                            <th>Role Match %</th>
+                            <th>Matched Skills</th>
+                            <th>Missing Skills</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in intelligence.role_suitability %}
+                            <tr>
+                                <td class="fw-bold text-light">{{ r.title }}</td>
+                                <td>
+                                    <span class="fw-bold text-success">{{ r.match_pct }}%</span>
+                                    <div class="progress bg-dark" style="height: 4px;">
+                                        <div class="progress-bar bg-success" style="width: {{ r.match_pct }}%;"></div>
+                                    </div>
+                                </td>
+                                <td class="small text-info">{{ r.matched_skills | join(', ') if r.matched_skills else 'None' }}</td>
+                                <td class="small text-warning">{{ r.missing_skills | join(', ') if r.missing_skills else 'None' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formal Eligibility vs Suitability -->
+    <div class="col-lg-5">
+        <div class="glass-card p-4 h-100">
+            <h5 class="fw-bold mb-3"><i class="fa-solid fa-building-user text-info me-2"></i> Academic Eligibility & Postings</h5>
+            <p class="text-muted small">Formal qualification check against company criteria (CGPA, Branch, Backlogs):</p>
+            <div class="list-group list-group-flush bg-transparent mb-3">
+                {% for ej in intelligence.eligibility.eligible_jobs %}
+                    <div class="list-group-item bg-transparent text-light border-secondary px-0">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold">{{ ej.company }} — {{ ej.title }}</span>
+                            <span class="badge bg-success"><i class="fa-solid fa-check me-1"></i> {{ ej.status }}</span>
+                        </div>
+                        <div class="extra-small text-muted">Min CGPA Required: {{ ej.min_cgpa }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Personalized Next Steps & Action Plan -->
+<div class="glass-card p-4 mb-4">
+    <h5 class="fw-bold mb-3"><i class="fa-solid fa-rocket text-danger me-2"></i> What You Should Do Next (Personalized Action Items)</h5>
+    <div class="row g-3">
+        {% for step in intelligence.next_steps %}
+            <div class="col-md-6 col-lg-4">
+                <div class="p-3 bg-dark rounded border border-secondary h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-danger">{{ step.priority }} Priority</span>
+                        </div>
+                        <h6 class="fw-bold text-light mb-1">{{ step.title }}</h6>
+                        <p class="text-muted extra-small mb-3">{{ step.reason }}</p>
+                    </div>
+                    <a href="{{ step.action_url }}" class="btn btn-sm btn-outline-info w-100 fw-bold">{{ step.action_text }}</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- AI Career Summary & Final Placement Readiness Summary -->
+<div class="glass-card p-4 border-primary mb-4">
+    <h5 class="fw-bold mb-3"><i class="fa-solid fa-robot text-primary me-2"></i> AI Career Summary</h5>
+    <p class="text-light lead fs-6 mb-4">{{ intelligence.career_summary }}</p>
+
+    <div class="pt-3 border-top border-secondary text-center">
+        <h5 class="fw-bold mb-2">🎯 Final Placement Readiness Summary</h5>
+        <div class="d-flex justify-content-center gap-4 text-muted small">
+            <span>Readiness: <b class="text-primary">{{ intelligence.overall_score }}/100</b></span>
+            <span>Confidence: <b class="text-info">{{ intelligence.confidence }}</b></span>
+            <span>Status: <b class="text-success">{{ intelligence.placement_status }}</b></span>
+        </div>
+    </div>
+</div>
 {% endblock %}
+
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        renderRadarChart(
-            'competencyRadarCanvas', 
-            ['Aptitude', 'Coding', 'Communication', 'Interview'], 
-            [{{ summary.aptitude_score }}, {{ summary.coding_score }}, {{ summary.communication_score }}, {{ summary.interview_score }}]
-        );
+        // Render Competency Radar Chart
+        const radarCanvas = document.getElementById('competencyRadarCanvas');
+        if (radarCanvas) {
+            new Chart(radarCanvas, {
+                type: 'radar',
+                data: {
+                    labels: ['Aptitude', 'Coding', 'Communication', 'Interview', 'Resume', 'Technical Skills'],
+                    datasets: [{
+                        label: 'Candidate Competency',
+                        data: [
+                            {{ intelligence.modules.aptitude.score or 0 }},
+                            {{ intelligence.modules.coding.score or 0 }},
+                            {{ intelligence.modules.communication.score or 0 }},
+                            {{ intelligence.modules.interview.score or 0 }},
+                            {{ intelligence.modules.resume.score or 0 }},
+                            {{ intelligence.modules.skills.score or 0 }}
+                        ],
+                        backgroundColor: 'rgba(37, 99, 235, 0.25)',
+                        borderColor: '#2563EB',
+                        pointBackgroundColor: '#60A5FA',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#2563EB'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            pointLabels: { color: '#94A3B8', font: { size: 12, weight: 'bold' } },
+                            ticks: { color: '#64748B', backdropColor: 'transparent', min: 0, max: 100 }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // Render Historical Readiness Trend Line Chart
+        const trendCanvas = document.getElementById('readinessTrendCanvas');
+        if (trendCanvas) {
+            new Chart(trendCanvas, {
+                type: 'line',
+                data: {
+                    labels: {{ intelligence.trends.labels | tojson }},
+                    datasets: [{
+                        label: 'Placement Readiness Score',
+                        data: {{ intelligence.trends.readiness_trend | tojson }},
+                        fill: true,
+                        backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                        borderColor: '#10B981',
+                        tension: 0.35,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#34D399'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94A3B8' } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94A3B8' }, min: 0, max: 100 }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
     });
 </script>
 {% endblock %}

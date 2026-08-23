@@ -7,10 +7,10 @@
         <div class="d-flex justify-content-between align-items-center">
             <div>
                 <span class="badge bg-success px-3 py-1 mb-2 rounded-pill fs-7">Test Result Report</span>
-                <h2 class="fw-bold text-white mb-1">{{ result.title }}</h2>
+                <h2 class="fw-bold text-body mb-1">{{ result.title }}</h2>
                 <p class="text-secondary mb-0">Completed on {{ result.completed_at.strftime('%b %d, %Y at %I:%M %p') }}</p>
             </div>
-            <a href="{{ url_for('aptitude.mock_hub') }}" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Back to Mocks</a>
+            <a href="{{ url_for('aptitude.mock_hub') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Back to Mocks</a>
         </div>
     </div>
 
@@ -58,15 +58,15 @@
         <!-- Category Performance -->
         <div class="col-12 col-lg-6">
             <div class="glass-card p-4 h-100 border-0 shadow-sm">
-                <h5 class="fw-bold text-white mb-3"><i class="fa-solid fa-chart-pie text-primary me-2"></i> Category Performance</h5>
+                <h5 class="fw-bold text-body mb-3"><i class="fa-solid fa-chart-pie text-primary me-2"></i> Category Performance</h5>
                 {% for cat_name, scores in cat_scores.items() %}
                 {% set pct = ((scores.correct / scores.total) * 100)|round(1) if scores.total > 0 else 0 %}
                 <div class="mb-3">
                     <div class="d-flex justify-content-between text-secondary fs-7 mb-1">
-                        <strong class="text-white">{{ cat_name }}</strong>
+                        <strong class="text-body">{{ cat_name }}</strong>
                         <span>{{ scores.correct }}/{{ scores.total }} ({{ pct }}%)</span>
                     </div>
-                    <div class="progress bg-dark" style="height: 10px;">
+                    <div class="progress progress-track-theme" style="height: 10px;">
                         <div class="progress-bar {% if pct >= 75 %}bg-success{% elif pct >= 50 %}bg-warning{% else %}bg-danger{% endif %}" style="width: {{ pct }}%;"></div>
                     </div>
                 </div>
@@ -77,7 +77,7 @@
         <!-- Strong & Weak Topics -->
         <div class="col-12 col-lg-6">
             <div class="glass-card p-4 h-100 border-0 shadow-sm">
-                <h5 class="fw-bold text-white mb-3"><i class="fa-solid fa-bullseye text-warning me-2"></i> Topic Diagnostics</h5>
+                <h5 class="fw-bold text-body mb-3"><i class="fa-solid fa-bullseye text-warning me-2"></i> Topic Diagnostics</h5>
                 
                 <!-- Strong Topics -->
                 <div class="mb-3">
@@ -99,17 +99,32 @@
                     {% if weak_topics %}
                     <div class="d-flex flex-wrap gap-2 mb-3">
                         {% for t in weak_topics %}
-                        <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-25 px-3 py-1.5 fs-7">{{ t }}</span>
+                        <a href="{{ url_for('aptitude.practice_start', topic=t, limit=10) }}" class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-25 px-3 py-1.5 fs-7 text-decoration-none hover-lift">
+                            {{ t }} <i class="fa-solid fa-arrow-right ms-1"></i>
+                        </a>
                         {% endfor %}
                     </div>
-                    <a href="{{ url_for('aptitude.practice_start', topic=weak_topics[0], limit=10) }}" class="btn btn-sm btn-outline-danger w-100 fw-semibold">
-                        Practice Weak Topic: {{ weak_topics[0] }}
-                    </a>
                     {% else %}
-                    <span class="text-muted fs-7">No weak topics identified in this attempt! Excellent consistency.</span>
+                    <span class="text-muted fs-7">Great job! No specific weak topics flagged in this attempt.</span>
                     {% endif %}
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="glass-card p-4 text-center shadow-sm">
+        <h6 class="fw-bold text-body mb-3">What would you like to do next?</h6>
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <a href="{{ url_for('aptitude.mock_hub') }}" class="btn btn-primary px-4 fw-semibold">
+                <i class="fa-solid fa-rotate-right me-1"></i> Take Another Mock Test
+            </a>
+            <a href="{{ url_for('aptitude.analytics') }}" class="btn btn-outline-info px-4 fw-semibold">
+                <i class="fa-solid fa-chart-line me-1"></i> View Full Aptitude Analytics
+            </a>
+            <a href="{{ url_for('aptitude.index') }}" class="btn btn-outline-secondary px-4 fw-semibold">
+                Aptitude Home
+            </a>
         </div>
     </div>
 </div>

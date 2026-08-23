@@ -96,6 +96,8 @@ def google_callback():
         configured_client_id = current_app.config.get('GOOGLE_CLIENT_ID')
         if configured_client_id and data.get('aud') != configured_client_id:
             current_app.logger.warning(f"Google Token audience mismatch: {data.get('aud')} vs {configured_client_id}")
+            flash('Invalid authentication token payload.', 'danger')
+            return redirect(url_for('auth.login'))
 
         if not email or not email_verified:
             flash('Unverified Google email account. Login denied.', 'danger')

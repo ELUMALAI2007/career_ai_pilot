@@ -11,7 +11,9 @@ from app.models.aptitude import (
     AptitudeCategory, AptitudeQuestion, AptitudeAttempt,
     AptitudeQuestionAnswer, AptitudeBookmark, AptitudeProgress,
     AptitudeTopicMastery, AptitudeTestSession, AptitudeTestResult,
-    AptitudeDailyChallenge, AptitudeDailyChallengeAttempt, AptitudeStreak
+    AptitudeDailyChallenge, AptitudeDailyChallengeAttempt, AptitudeStreak,
+    AptitudeGenerationLog, AptitudeCategoryPerformance, AptitudeDifficultyPerformance,
+    AptitudeRecommendation, AptitudeReadinessScore, AptitudeLevelProgress
 )
 from app.models.coding import CodingProblem, CodingSubmission
 from app.models.communication import CommunicationAssessment
@@ -34,6 +36,8 @@ __all__ = [
     'AptitudeQuestionAnswer', 'AptitudeBookmark', 'AptitudeProgress',
     'AptitudeTopicMastery', 'AptitudeTestSession', 'AptitudeTestResult',
     'AptitudeDailyChallenge', 'AptitudeDailyChallengeAttempt', 'AptitudeStreak',
+    'AptitudeGenerationLog', 'AptitudeCategoryPerformance', 'AptitudeDifficultyPerformance',
+    'AptitudeRecommendation', 'AptitudeReadinessScore', 'AptitudeLevelProgress',
     'CodingProblem', 'CodingSubmission',
     'CommunicationAssessment',
     'CompanyProfile', 'PlacementPattern', 'InterviewExperience',

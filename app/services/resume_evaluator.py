@@ -113,7 +113,7 @@ class ResumeEvaluator:
         missing_keywords = []
 
         for kw in target_keywords:
-            pattern = r'\b' + re.escape(kw) + r'\b'
+            pattern = r'(?<![a-zA-Z0-9#+])' + re.escape(kw.lower()) + r'(?![a-zA-Z0-9#+])'
             if re.search(pattern, lowered_text):
                 found_keywords.append(kw.title())
             elif any(kw[:4] in sk.lower() for sk in extracted_skills if len(kw) >= 4):
@@ -166,7 +166,7 @@ class ResumeEvaluator:
                 if b_lower.startswith(wv) or f" {wv} " in b_lower:
                     weak_verbs_found.append(wv)
                     suggested_verb = cls.STRONG_ACTION_VERBS[hash(b) % len(cls.STRONG_ACTION_VERBS)]
-                    clean_b = re.sub(r'^(worked on|helped with|responsible for|did|made)\s*', '', b, flags=re.IGNORECASE).strip()
+                    clean_b = re.sub(r'^[•\-\*\s]*(?:worked on|helped with|responsible for|participated in|assisted with|handled|involved in|did|made)\s*', '', b, flags=re.IGNORECASE).strip()
                     suggested_b = f"{suggested_verb.capitalize()} {clean_b} [Note: Add a verifiable metric if applicable]"
                     before_after_suggestions.append({
                         "current": b,
@@ -259,11 +259,12 @@ class ResumeEvaluator:
         }
 
         # 8. Calculating 3 Sub-scores and Overall Readiness Score
-        ats_score = round(0.4 * keyword_match_pct + 0.3 * formatting_score + 0.3 * completeness_score, 1)
-        quality_score = round(0.35 * (bullets_analysis["metric_presence_pct"] + 40) + 0.35 * project_score + 0.3 * language_score, 1)
-        job_match_score = round(0.5 * skill_match_pct + 0.5 * keyword_match_pct, 1)
+        ats_score = min(100.0, round(0.4 * keyword_match_pct + 0.3 * formatting_score + 0.3 * completeness_score, 1))
+        raw_quality = round(0.35 * (bullets_analysis["metric_presence_pct"] + 40) + 0.35 * project_score + 0.3 * language_score, 1)
+        quality_score = min(100.0, raw_quality)
+        job_match_score = min(100.0, round(0.5 * skill_match_pct + 0.5 * keyword_match_pct, 1))
         
-        overall_readiness_score = round(0.25 * ats_score + 0.35 * quality_score + 0.40 * job_match_score, 1)
+        overall_readiness_score = min(100.0, round(0.25 * ats_score + 0.35 * quality_score + 0.40 * job_match_score, 1))
 
         # 9. Recruiter First Impression Synthesis
         recruiter_impression = (

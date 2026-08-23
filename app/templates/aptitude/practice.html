@@ -6,10 +6,10 @@
     <div class="glass-card p-4 mb-4 border-start border-primary border-4 rounded-3 shadow-sm">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <h2 class="fw-bold text-white mb-1"><i class="fa-solid fa-play text-primary me-2"></i> Custom Practice Setup</h2>
+                <h2 class="fw-bold text-body mb-1"><i class="fa-solid fa-play text-primary me-2"></i> Custom Practice Setup</h2>
                 <p class="text-secondary mb-0">Customize Category, Topic, Level, and Question count for practice.</p>
             </div>
-            <a href="{{ url_for('aptitude.index') }}" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Aptitude Home</a>
+            <a href="{{ url_for('aptitude.index') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Aptitude Home</a>
         </div>
     </div>
 
@@ -20,7 +20,7 @@
                     <!-- Category Select -->
                     <div class="mb-3">
                         <label class="form-label text-secondary fw-semibold">Select Category</label>
-                        <select name="category_id" class="form-select bg-dark text-white border-secondary">
+                        <select name="category_id" id="categorySelect" class="form-select">
                             <option value="">All Categories</option>
                             {% for cat in categories %}
                             <option value="{{ cat.id }}">{{ cat.name }}</option>
@@ -31,7 +31,7 @@
                     <!-- Topic Select -->
                     <div class="mb-3">
                         <label class="form-label text-secondary fw-semibold">Select Topic</label>
-                        <select name="topic" class="form-select bg-dark text-white border-secondary">
+                        <select name="topic" id="topicSelect" class="form-select">
                             <option value="all">All Topics</option>
                             {% for t in all_topics %}
                             <option value="{{ t }}">{{ t }}</option>
@@ -42,18 +42,18 @@
                     <!-- Difficulty Select -->
                     <div class="mb-3">
                         <label class="form-label text-secondary fw-semibold">Select Difficulty Level</label>
-                        <select name="difficulty" class="form-select bg-dark text-white border-secondary text-capitalize">
-                            <option value="all">Adaptive (All Levels)</option>
-                            {% for lvl in levels %}
-                            <option value="{{ lvl }}">Level {{ loop.index0 }} — {{ lvl|title }}</option>
-                            {% endfor %}
+                        <select name="difficulty" class="form-select">
+                            <option value="all">Mixed / Adaptive (All Levels)</option>
+                            <option value="Easy">🟢 Easy — Beginner / Fundamental</option>
+                            <option value="Medium" selected>🟡 Medium — Placement Level</option>
+                            <option value="Hard">🔴 Hard — Advanced / Competitive Placement</option>
                         </select>
                     </div>
 
                     <!-- Question Limit -->
                     <div class="mb-4">
                         <label class="form-label text-secondary fw-semibold">Number of Questions</label>
-                        <select name="limit" class="form-select bg-dark text-white border-secondary">
+                        <select name="limit" class="form-select">
                             <option value="5">5 Questions</option>
                             <option value="10" selected>10 Questions</option>
                             <option value="15">15 Questions</option>
@@ -70,4 +70,32 @@
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const categorySelect = document.getElementById('categorySelect');
+    const topicSelect = document.getElementById('topicSelect');
+    const topicsByCat = {{ topics_by_cat | tojson }};
+    const allTopics = {{ all_topics | tojson }};
+
+    if (categorySelect && topicSelect) {
+        categorySelect.addEventListener('change', function() {
+            const catId = this.value;
+            topicSelect.innerHTML = '<option value="all">All Topics</option>';
+            let topicsToShow = allTopics;
+            if (catId && topicsByCat[catId]) {
+                topicsToShow = topicsByCat[catId];
+            }
+            topicsToShow.forEach(function(t) {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = t;
+                topicSelect.appendChild(opt);
+            });
+        });
+    }
+});
+</script>
+{% endblock %}
 {% endblock %}

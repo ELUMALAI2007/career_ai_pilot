@@ -14,14 +14,24 @@ from app.models.aptitude import (
     AptitudeCategory, AptitudeQuestion, AptitudeAttempt,
     AptitudeQuestionAnswer, AptitudeBookmark, AptitudeProgress,
     AptitudeTopicMastery, AptitudeTestSession, AptitudeTestResult,
-    AptitudeDailyChallenge, AptitudeDailyChallengeAttempt, AptitudeStreak
+    AptitudeDailyChallenge, AptitudeDailyChallengeAttempt, AptitudeStreak,
+    AptitudeCategoryPerformance, AptitudeDifficultyPerformance, AptitudeLevelProgress,
+    AptitudeReadinessScore, AptitudeRecommendation, AptitudeGenerationLog
 )
 
 
 class AptitudeService:
     """Service handling placement aptitude learning, assessment, adaptivity, and analytics."""
 
-    LEVELS = ["foundation", "beginner", "intermediate", "advanced", "expert", "master"]
+    LEVELS = [
+        "Level 1 — Beginner",
+        "Level 2 — Basic",
+        "Level 3 — Intermediate",
+        "Level 4 — Advanced",
+        "Level 5 — Placement Ready",
+        "Level 6 — Expert",
+        "Level 7 — Master"
+    ]
 
     @staticmethod
     def get_categories() -> List[AptitudeCategory]:
@@ -35,7 +45,7 @@ class AptitudeService:
         if not progress:
             progress = AptitudeProgress(
                 user_id=user_id,
-                current_level='foundation',
+                current_level='Level 1 — Beginner',
                 total_questions_solved=0,
                 correct_count=0,
                 overall_accuracy=0.0,
@@ -98,7 +108,6 @@ class AptitudeService:
         acc_score = min(100.0, accuracy) * 0.40
         vol_score = min(100.0, (total_solved / 200.0) * 100.0) * 0.20
         
-        # Ideal speed ~40s, penalize if > 90s
         speed_ratio = max(0.0, 1.0 - max(0.0, (avg_speed - 40.0) / 60.0))
         speed_score = (speed_ratio * 100.0) * 0.20
 
@@ -109,10 +118,9 @@ class AptitudeService:
 
     @classmethod
     def recalculate_user_progress(cls, user_id: int):
-        """Recalculates user progress, level adaptivity, and readiness score."""
+        """Recalculates user progress across 7 Aptitude Levels and readiness score."""
         progress = cls.get_or_create_user_progress(user_id)
 
-        # Aggregates from question answers
         stats = db.session.query(
             func.count(AptitudeQuestionAnswer.id),
             func.sum(db.case((AptitudeQuestionAnswer.is_correct == True, 1), else_=0)),
@@ -128,63 +136,169 @@ class AptitudeService:
         progress.overall_accuracy = round((correct_ans / total_ans * 100.0), 1) if total_ans > 0 else 0.0
         progress.avg_time_seconds = round(avg_speed, 1)
 
-        # Calculate mock avg score
         mock_stats = db.session.query(func.avg(AptitudeTestResult.accuracy_percentage)).filter_by(user_id=user_id).scalar()
         mock_avg = float(mock_stats or 0.0)
 
         progress.readiness_score = cls.calculate_readiness_score(progress.overall_accuracy, avg_speed, total_ans, mock_avg)
 
-        # Level Progression Logic
-        if total_ans >= 15:
-            if progress.overall_accuracy >= 85 and progress.current_level != 'master':
-                curr_idx = cls.LEVELS.index(progress.current_level)
-                if curr_idx < len(cls.LEVELS) - 1:
-                    progress.current_level = cls.LEVELS[curr_idx + 1]
-            elif progress.overall_accuracy < 45 and progress.current_level != 'foundation':
-                curr_idx = cls.LEVELS.index(progress.current_level)
-                if curr_idx > 0:
-                    progress.current_level = cls.LEVELS[curr_idx - 1]
+        # 7-Level Progression Criteria
+        if total_ans >= 150 and progress.overall_accuracy >= 85:
+            progress.current_level = "Level 7 — Master"
+        elif total_ans >= 120 and progress.overall_accuracy >= 80:
+            progress.current_level = "Level 6 — Expert"
+        elif total_ans >= 90 and progress.overall_accuracy >= 75:
+            progress.current_level = "Level 5 — Placement Ready"
+        elif total_ans >= 60 and progress.overall_accuracy >= 70:
+            progress.current_level = "Level 4 — Advanced"
+        elif total_ans >= 35 and progress.overall_accuracy >= 60:
+            progress.current_level = "Level 3 — Intermediate"
+        elif total_ans >= 15 and progress.overall_accuracy >= 50:
+            progress.current_level = "Level 2 — Basic"
+        else:
+            progress.current_level = "Level 1 — Beginner"
+
+        # Update AptitudeCategoryPerformance
+        cat_stats = db.session.query(
+            AptitudeCategory.name,
+            func.count(AptitudeQuestionAnswer.id),
+            func.sum(db.case((AptitudeQuestionAnswer.is_correct == True, 1), else_=0))
+        ).join(AptitudeQuestion, AptitudeQuestionAnswer.question_id == AptitudeQuestion.id)\
+         .join(AptitudeCategory, AptitudeQuestion.category_id == AptitudeCategory.id)\
+         .filter(AptitudeQuestionAnswer.user_id == user_id)\
+         .group_by(AptitudeCategory.name).all()
+
+        for c_name, c_total, c_correct in cat_stats:
+            if c_total > 0:
+                cat_perf = AptitudeCategoryPerformance.query.filter_by(user_id=user_id, category_name=c_name).first()
+                if not cat_perf:
+                    cat_perf = AptitudeCategoryPerformance(user_id=user_id, category_name=c_name)
+                    db.session.add(cat_perf)
+                cat_perf.questions_attempted = c_total
+                cat_perf.correct_count = c_correct or 0
+                cat_perf.accuracy = round((cat_perf.correct_count / c_total) * 100.0, 1)
+
+        # Update AptitudeDifficultyPerformance
+        diff_stats = db.session.query(
+            AptitudeQuestion.difficulty,
+            func.count(AptitudeQuestionAnswer.id),
+            func.sum(db.case((AptitudeQuestionAnswer.is_correct == True, 1), else_=0))
+        ).join(AptitudeQuestion, AptitudeQuestionAnswer.question_id == AptitudeQuestion.id)\
+         .filter(AptitudeQuestionAnswer.user_id == user_id)\
+         .group_by(AptitudeQuestion.difficulty).all()
+
+        for d_name, d_total, d_correct in diff_stats:
+            if d_name and d_total > 0:
+                diff_perf = AptitudeDifficultyPerformance.query.filter_by(user_id=user_id, difficulty=d_name).first()
+                if not diff_perf:
+                    diff_perf = AptitudeDifficultyPerformance(user_id=user_id, difficulty=d_name)
+                    db.session.add(diff_perf)
+                diff_perf.questions_attempted = d_total
+                diff_perf.correct_count = d_correct or 0
+                diff_perf.accuracy = round((diff_perf.correct_count / d_total) * 100.0, 1)
+
+        # Sync Level Progress
+        lvl_progress = AptitudeLevelProgress.query.filter_by(user_id=user_id, level=1).first()
+        if not lvl_progress:
+            lvl_progress = AptitudeLevelProgress(user_id=user_id, level=1, level_name='Beginner')
+            db.session.add(lvl_progress)
+        lvl_progress.questions_attempted = total_ans
+        lvl_progress.questions_correct = progress.correct_count
+        lvl_progress.accuracy = progress.overall_accuracy
 
         progress.updated_at = datetime.utcnow()
         db.session.commit()
 
     @classmethod
+    def ensure_question_bank_seeded(cls):
+        """Auto-seeds 1,000 verified placement questions if database is empty."""
+        if AptitudeQuestion.query.count() == 0:
+            from generate_question_bank import generate_batch
+            generate_batch()
+
+    @classmethod
+    def resolve_topic_name(cls, topic: Optional[str]) -> Optional[str]:
+        """Resolves raw topic input to canonical database topic name."""
+        if not topic or not topic.strip() or topic.strip().lower() == 'all':
+            return None
+
+        t_clean = topic.strip()
+        db_topics = [t[0] for t in db.session.query(AptitudeQuestion.topic).distinct().all()]
+
+        # 1. Exact match (case insensitive)
+        for dt in db_topics:
+            if dt.lower() == t_clean.lower():
+                return dt
+
+        # 2. Slug match (normalize punctuation, spacing, &, and)
+        import re
+        def to_slug(s):
+            return re.sub(r'[^a-z0-9]', '', s.lower().replace('&', '').replace('and', ''))
+
+        st = to_slug(t_clean)
+        for dt in db_topics:
+            if to_slug(dt) == st:
+                return dt
+
+        # 3. Substring match
+        for dt in db_topics:
+            if st in to_slug(dt) or to_slug(dt) in st:
+                return dt
+
+        return t_clean
+
+    @classmethod
     def get_practice_questions(cls, category_id: Optional[int] = None, topic: Optional[str] = None, difficulty: Optional[str] = None, limit: int = 10) -> List[AptitudeQuestion]:
         """Fetches practice questions filtered by category, topic, or difficulty with fallback relaxation."""
-        # 1. Strict Query
+        from app.utils.aptitude_validator import normalize_difficulty
+
+        cls.ensure_question_bank_seeded()
+
+        resolved_topic = cls.resolve_topic_name(topic)
+
         query = AptitudeQuestion.query
         if category_id:
             query = query.filter_by(category_id=category_id)
-        if topic and topic.strip() and topic.strip().lower() != 'all':
-            query = query.filter_by(topic=topic.strip())
+
+        if resolved_topic:
+            query = query.filter(func.lower(AptitudeQuestion.topic) == resolved_topic.lower())
+
         if difficulty and difficulty.strip() and difficulty.strip().lower() not in ['all', 'adaptive']:
-            query = query.filter_by(difficulty=difficulty.strip())
+            norm_diff = normalize_difficulty(difficulty)
+            query = query.filter(func.lower(AptitudeQuestion.difficulty) == norm_diff.lower())
 
         questions = query.order_by(func.random()).limit(limit).all()
         
-        # 2. Fallback 1: Relax difficulty filter if insufficient questions
+        # Fallback relaxation 1: Relax difficulty filter if match count < limit
         if len(questions) < limit and difficulty and difficulty.strip().lower() not in ['all', 'adaptive']:
             query_relaxed = AptitudeQuestion.query
             if category_id:
                 query_relaxed = query_relaxed.filter_by(category_id=category_id)
-            if topic and topic.strip() and topic.strip().lower() != 'all':
-                query_relaxed = query_relaxed.filter_by(topic=topic.strip())
-            questions = query_relaxed.order_by(func.random()).limit(limit).all()
+            if resolved_topic:
+                query_relaxed = query_relaxed.filter(func.lower(AptitudeQuestion.topic) == resolved_topic.lower())
+            more_qs = query_relaxed.order_by(func.random()).limit(limit).all()
+            existing_ids = {q.id for q in questions}
+            for q in more_qs:
+                if q.id not in existing_ids and len(questions) < limit:
+                    questions.append(q)
 
-        # 3. Fallback 2: Relax topic filter if insufficient questions
-        if len(questions) < limit and topic and topic.strip().lower() != 'all':
+        # Fallback relaxation 2: Relax topic filter if match count < limit
+        if len(questions) < limit and resolved_topic:
             query_cat = AptitudeQuestion.query
             if category_id:
                 query_cat = query_cat.filter_by(category_id=category_id)
-            questions = query_cat.order_by(func.random()).limit(limit).all()
+            more_qs = query_cat.order_by(func.random()).limit(limit).all()
+            existing_ids = {q.id for q in questions}
+            for q in more_qs:
+                if q.id not in existing_ids and len(questions) < limit:
+                    questions.append(q)
 
-        # 4. Fallback 3: Return any available questions from the question bank
+        # Fallback relaxation 3: All active questions
         if len(questions) < limit:
-            questions = AptitudeQuestion.query.order_by(func.random()).limit(limit).all()
-
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.info(f"Practice Filter Request -> CatID: {category_id}, Topic: '{topic}', Diff: '{difficulty}', Limit: {limit} | Retrieved: {len(questions)} questions")
+            more_qs = AptitudeQuestion.query.order_by(func.random()).limit(limit).all()
+            existing_ids = {q.id for q in questions}
+            for q in more_qs:
+                if q.id not in existing_ids and len(questions) < limit:
+                    questions.append(q)
 
         return questions
 
@@ -197,7 +311,6 @@ class AptitudeService:
 
         is_correct = (selected_option.upper() == question.correct_option.upper())
 
-        # Log answer
         ans_log = AptitudeQuestionAnswer(
             user_id=user_id,
             question_id=question_id,
@@ -207,7 +320,6 @@ class AptitudeService:
         )
         db.session.add(ans_log)
 
-        # Update topic mastery
         mastery = AptitudeTopicMastery.query.filter_by(user_id=user_id, topic=question.topic).first()
         if not mastery:
             cat = db.session.get(AptitudeCategory, question.category_id)
@@ -231,13 +343,13 @@ class AptitudeService:
 
         db.session.commit()
 
-        # Update streak & readiness
         cls.update_user_streak(user_id, 1)
         cls.recalculate_user_progress(user_id)
 
         return {
             "is_correct": is_correct,
             "correct_option": question.correct_option,
+            "correct_answer": question.correct_option,
             "explanation": question.explanation,
             "formula": question.formula,
             "shortcut": question.shortcut,
@@ -247,22 +359,31 @@ class AptitudeService:
         }
 
     @classmethod
-    def start_mock_session(cls, user_id: int, test_type: str = 'standard', custom_title: Optional[str] = None) -> AptitudeTestSession:
+    def start_mock_session(cls, user_id: int, test_type: str = 'standard', custom_title: Optional[str] = None, num_questions: Optional[int] = None) -> AptitudeTestSession:
         """Launches a timed mock test with server-side expiry security."""
         mock_configs = {
-            'quick': ('Quick Placement Mock', 15, 15),
-            'standard': ('Standard Placement Assessment', 30, 30),
+            'quick_5': ('Quick Practice (5 Qs)', 5, 10),
+            'quick_10': ('Quick Practice (10 Qs)', 10, 15),
+            'quick_20': ('Quick Practice (20 Qs)', 20, 25),
+            'quick': ('Quick Placement Practice', 15, 15),
+            'mock_25': ('Placement Mock Test (25 Qs)', 25, 30),
+            'mock_50': ('Placement Mock Test (50 Qs)', 50, 60),
+            'mock_100': ('Grand Placement Mock (100 Qs)', 100, 120),
+            'standard': ('Standard Placement Assessment', 30, 35),
             'placement': ('Placement Mastery Assessment', 50, 60),
-            'full': ('Full Length Aptitude Mock', 100, 90),
-            'master': ('Master Challenge Mock', 100, 90),
+            'full': ('Full Length Aptitude Mock', 100, 120),
+            'master': ('Master Challenge Mock', 100, 120),
             'tcs': ('TCS Pattern-Inspired Mock', 30, 35),
             'infosys': ('Infosys Pattern-Inspired Mock', 30, 35),
             'wipro': ('Wipro Pattern-Inspired Mock', 30, 35),
             'accenture': ('Accenture Pattern-Inspired Mock', 30, 35),
         }
-        title, num_q, duration_m = mock_configs.get(test_type, ('Placement Mock Test', 30, 30))
+        title, num_q, duration_m = mock_configs.get(test_type, ('Placement Mock Test', 30, 35))
         if custom_title:
             title = custom_title
+        if num_questions and num_questions in [5, 10, 20, 25, 50, 100]:
+            num_q = num_questions
+            duration_m = max(10, int(num_q * 1.2))
 
         questions = AptitudeQuestion.query.order_by(func.random()).limit(num_q).all()
         q_payload = []
@@ -270,7 +391,7 @@ class AptitudeService:
             q_payload.append({
                 "id": q.id,
                 "topic": q.topic,
-                "category": q.category.name if q.category else "Quantitative",
+                "category": q.category.name if q.category else "Quantitative Aptitude",
                 "question_text": q.question_text,
                 "option_a": q.option_a,
                 "option_b": q.option_b,
@@ -307,7 +428,6 @@ class AptitudeService:
         if not session or session.user_id != user_id:
             return None
 
-        # Server-side timer check
         now = datetime.utcnow()
         is_expired = now > session.expires_at
 
@@ -371,7 +491,6 @@ class AptitudeService:
                 correct_count += 1
                 cat_scores[cat_name]["correct"] += 1
                 topic_perf[topic_name]["correct"] += 1
-                # Log question answer
                 db.session.add(AptitudeQuestionAnswer(user_id=user_id, question_id=q_obj.id, selected_option=sel_opt.upper(), is_correct=True))
             else:
                 incorrect_count += 1
@@ -382,7 +501,6 @@ class AptitudeService:
         now = datetime.utcnow()
         time_used = min(session.duration_minutes * 60, int((now - session.started_at).total_seconds()))
 
-        # Categorize strong and weak topics
         strong_topics = [t for t, p in topic_perf.items() if (p['correct'] / p['total']) >= 0.70]
         weak_topics = [t for t, p in topic_perf.items() if (p['correct'] / p['total']) < 0.60]
 
@@ -416,12 +534,22 @@ class AptitudeService:
 
     @classmethod
     def get_daily_challenge(cls, user_id: int) -> Dict[str, Any]:
-        """Gets or generates today's Daily 10 Challenge."""
+        """Gets or generates today's Daily 10 Challenge (3 Easy, 4 Medium, 3 Hard)."""
         today = date.today()
         challenge = AptitudeDailyChallenge.query.filter_by(challenge_date=today).first()
 
         if not challenge:
-            questions = AptitudeQuestion.query.order_by(func.random()).limit(10).all()
+            easy_qs = AptitudeQuestion.query.filter(func.lower(AptitudeQuestion.difficulty).in_(['easy', 'beginner'])).order_by(func.random()).limit(3).all()
+            med_qs = AptitudeQuestion.query.filter(func.lower(AptitudeQuestion.difficulty).in_(['medium', 'intermediate'])).order_by(func.random()).limit(4).all()
+            hard_qs = AptitudeQuestion.query.filter(func.lower(AptitudeQuestion.difficulty).in_(['hard', 'advanced', 'expert', 'master'])).order_by(func.random()).limit(3).all()
+
+            questions = easy_qs + med_qs + hard_qs
+            if len(questions) < 10:
+                needed = 10 - len(questions)
+                existing_ids = [q.id for q in questions]
+                fill_qs = AptitudeQuestion.query.filter(~AptitudeQuestion.id.in_(existing_ids)).order_by(func.random()).limit(needed).all()
+                questions.extend(fill_qs)
+
             q_payload = [{"id": q.id, "topic": q.topic, "question_text": q.question_text, "option_a": q.option_a, "option_b": q.option_b, "option_c": q.option_c, "option_d": q.option_d, "difficulty": q.difficulty} for q in questions]
             challenge = AptitudeDailyChallenge(
                 challenge_date=today,
@@ -444,12 +572,12 @@ class AptitudeService:
         if bm:
             db.session.delete(bm)
             db.session.commit()
-            return False  # Removed
+            return False
         else:
             bm = AptitudeBookmark(user_id=user_id, question_id=question_id)
             db.session.add(bm)
             db.session.commit()
-            return True  # Added
+            return True
 
     @classmethod
     def get_user_bookmarks(cls, user_id: int) -> List[AptitudeQuestion]:
@@ -473,10 +601,33 @@ class AptitudeService:
 
     @classmethod
     def get_analytics_data(cls, user_id: int) -> Dict[str, Any]:
-        """Compiles analytics metrics for Chart.js visualization."""
+        """Compiles detailed analytics metrics, difficulty breakdown, and recommendations."""
         progress = cls.get_or_create_user_progress(user_id)
         masteries = AptitudeTopicMastery.query.filter_by(user_id=user_id).all()
         recent_results = AptitudeTestResult.query.filter_by(user_id=user_id).order_by(AptitudeTestResult.completed_at.desc()).limit(10).all()
+
+        # Calculate Difficulty Breakdown (Easy, Medium, Hard accuracy)
+        answers_query = db.session.query(
+            AptitudeQuestion.difficulty,
+            func.count(AptitudeQuestionAnswer.id),
+            func.sum(db.case((AptitudeQuestionAnswer.is_correct == True, 1), else_=0))
+        ).join(AptitudeQuestion, AptitudeQuestionAnswer.question_id == AptitudeQuestion.id)\
+         .filter(AptitudeQuestionAnswer.user_id == user_id)\
+         .group_by(AptitudeQuestion.difficulty).all()
+
+        diff_stats = {"Easy": {"total": 0, "correct": 0}, "Medium": {"total": 0, "correct": 0}, "Hard": {"total": 0, "correct": 0}}
+        for diff_raw, total_cnt, corr_cnt in answers_query:
+            norm_d = "Medium"
+            if str(diff_raw).lower() in ["easy", "beginner"]:
+                norm_d = "Easy"
+            elif str(diff_raw).lower() in ["hard", "advanced", "expert", "master"]:
+                norm_d = "Hard"
+            diff_stats[norm_d]["total"] += (total_cnt or 0)
+            diff_stats[norm_d]["correct"] += (corr_cnt or 0)
+
+        easy_acc = round((diff_stats["Easy"]["correct"] / diff_stats["Easy"]["total"] * 100.0), 1) if diff_stats["Easy"]["total"] > 0 else 0.0
+        med_acc = round((diff_stats["Medium"]["correct"] / diff_stats["Medium"]["total"] * 100.0), 1) if diff_stats["Medium"]["total"] > 0 else 0.0
+        hard_acc = round((diff_stats["Hard"]["correct"] / diff_stats["Hard"]["total"] * 100.0), 1) if diff_stats["Hard"]["total"] > 0 else 0.0
 
         topic_labels = [m.topic for m in masteries] or ["Percentage", "Average", "Number Series", "Coding-Decoding", "Grammar"]
         topic_scores = [m.mastery_percentage for m in masteries] or [85, 70, 90, 65, 80]
@@ -484,14 +635,32 @@ class AptitudeService:
         recent_scores = [r.accuracy_percentage for r in reversed(recent_results)] or [60, 65, 75, 80, 85]
         recent_dates = [r.completed_at.strftime("%b %d") for r in reversed(recent_results)] or ["Test 1", "Test 2", "Test 3", "Test 4", "Test 5"]
 
+        # Recommendations logic
+        recommendations = []
+        if masteries:
+            sorted_masteries = sorted(masteries, key=lambda x: x.mastery_percentage)
+            lowest = sorted_masteries[0]
+            highest = sorted_masteries[-1]
+            recommendations.append(f"Your {highest.topic} accuracy is {highest.mastery_percentage}%. Great job!")
+            recommendations.append(f"Your {lowest.topic} accuracy is only {lowest.mastery_percentage}%. Recommended: Practice {lowest.topic} — Medium level.")
+        else:
+            recommendations.append("Recommended: Complete a Quick Practice session (10 questions) to establish your baseline topic analytics.")
+
+        if med_acc < 60 and diff_stats["Medium"]["total"] > 5:
+            recommendations.append("Focus on Medium difficulty placement questions to increase your readiness score above 75.")
+
         return {
             "progress": progress,
             "readiness_score": progress.readiness_score,
             "overall_accuracy": progress.overall_accuracy,
             "total_solved": progress.total_questions_solved,
             "avg_time": progress.avg_time_seconds,
+            "easy_accuracy": easy_acc,
+            "medium_accuracy": med_acc,
+            "hard_accuracy": hard_acc,
             "topic_labels": topic_labels,
             "topic_scores": topic_scores,
             "recent_scores": recent_scores,
-            "recent_dates": recent_dates
+            "recent_dates": recent_dates,
+            "recommendations": recommendations
         }

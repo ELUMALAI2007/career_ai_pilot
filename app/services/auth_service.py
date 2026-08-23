@@ -13,24 +13,66 @@ class AuthService:
     @staticmethod
     def register_user(full_name: str, email: str, password: str) -> User:
         """Registers a new user account via local credentials."""
+        from sqlalchemy.exc import IntegrityError
+        from app.models.user import Role
+
         clean_email = email.strip().lower()
         existing = User.query.filter_by(email=clean_email).first()
         if existing:
-            raise ValueError("This email address is already registered.")
-        user = User(full_name=full_name.strip(), email=clean_email, status='approved', auth_provider='local')
+            raise ValueError("This email address is already registered. Please sign in instead.")
+
+        student_role = Role.query.filter_by(name='student').first()
+        role_id = student_role.id if student_role else None
+
+        user = User(
+            full_name=full_name.strip(),
+            email=clean_email,
+            status='approved',
+            auth_provider='local',
+            role_id=role_id,
+            is_active=True,
+            is_verified=True
+        )
         user.set_password(password)
-        db.session.add(user)
-        db.session.commit()
-        return user
+
+        try:
+            db.session.add(user)
+            db.session.commit()
+            return user
+        except IntegrityError:
+            db.session.rollback()
+            raise ValueError("This email address is already registered. Please sign in instead.")
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error registering user {clean_email}: {e}")
+            raise
 
     @staticmethod
     def authenticate(email: str, password: str) -> User:
-        """Authenticates user credentials."""
+        """Authenticates user credentials, logs diagnostic lookup status, and updates last login timestamp."""
+        from datetime import datetime
         clean_email = email.strip().lower() if email else ""
         user = User.query.filter_by(email=clean_email).first()
-        if user and user.check_password(password):
-            return user
-        return None
+
+        if not user:
+            logger.info(f"Authentication lookup failed: user_not_found for email='{clean_email}'")
+            return None
+
+        if not user.is_active:
+            logger.info(f"Authentication lookup failed: account_deactivated for email='{clean_email}'")
+            return None
+
+        if not user.check_password(password):
+            logger.info(f"Authentication lookup failed: password_mismatch for email='{clean_email}'")
+            return None
+
+        user.last_login_at = datetime.utcnow()
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            logger.warning(f"Could not update last_login_at for {clean_email}: {e}")
+        return user
 
     @classmethod
     def process_google_user(cls, google_id: str, email: str, full_name: str, picture: str = None) -> tuple[User, bool]:

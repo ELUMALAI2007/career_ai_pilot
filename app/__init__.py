@@ -31,6 +31,19 @@ def create_app(config_class=DevelopmentConfig):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    # Register helper functions in Jinja environment
+    def get_field(obj, key, default=''):
+        if obj is None:
+            return default
+        if isinstance(obj, dict):
+            return obj.get(key, default)
+        return getattr(obj, key, default)
+
+    app.jinja_env.filters['get_field'] = get_field
+    app.jinja_env.globals['get_field'] = get_field
+    app.jinja_env.globals['attribute'] = get_field
+    app.jinja_env.globals['getattr'] = get_field
+
     # Initialize logging & security headers
     configure_logging(app)
     configure_security_headers(app)
@@ -42,10 +55,39 @@ def create_app(config_class=DevelopmentConfig):
     mail.init_app(app)
     csrf.init_app(app)
 
-    # Ensure all database models are registered and tables created automatically
+    # Ensure all database models are registered, tables created, and default roles/admin account seeded automatically
     with app.app_context():
         import app.models as _models  # noqa: F401
         db.create_all()
+        try:
+            from app.models.user import User, Role
+            admin_role = Role.query.filter_by(name='admin').first()
+            if not admin_role:
+                admin_role = Role(name='admin', description='Platform Administrator')
+                db.session.add(admin_role)
+            student_role = Role.query.filter_by(name='student').first()
+            if not student_role:
+                student_role = Role(name='student', description='Placement Candidate Student')
+                db.session.add(student_role)
+            db.session.commit()
+
+            admin_email = "admin@careerpilot.ai"
+            admin_user = User.query.filter_by(email=admin_email).first()
+            if not admin_user:
+                admin_user = User(
+                    full_name='System Administrator',
+                    email=admin_email,
+                    role_id=admin_role.id,
+                    status='approved',
+                    auth_provider='local',
+                    is_active=True,
+                    is_verified=True
+                )
+                admin_user.set_password('AdminSecure123!')
+                db.session.add(admin_user)
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
 
     # Login Manager Configuration
     login_manager.login_view = 'auth.login'

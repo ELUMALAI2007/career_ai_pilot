@@ -17,10 +17,16 @@ class Role(db.Model):
     description = db.Column(db.String(255))
     users = db.relationship('User', backref='role', lazy='dynamic')
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
 
 class User(db.Model, UserMixin):
     """User Account database model."""
     __tablename__ = 'users'
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(100), nullable=False)
@@ -32,8 +38,10 @@ class User(db.Model, UserMixin):
     status = db.Column(db.String(20), default='approved')       # 'pending', 'approved', 'rejected'
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
+    is_verified = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_login_at = db.Column(db.DateTime, nullable=True)
 
     # Relationships
     resumes = db.relationship('ResumeUpload', backref='user', lazy='dynamic', cascade='all, delete-orphan')

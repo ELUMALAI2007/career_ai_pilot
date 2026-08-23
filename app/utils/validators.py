@@ -5,7 +5,7 @@ File type, security, and document format validation utilities.
 
 import os
 
-ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc'}
+ALLOWED_EXTENSIONS = {'pdf', 'docx'}
 
 
 def validate_file_extension(filename: str) -> bool:

@@ -53,7 +53,8 @@ def upload():
         flash('No file selected for upload.', 'danger')
         return redirect(url_for('resume.index'))
 
-    if not validate_file_extension(file.filename):
+    original_name = file.filename
+    if not validate_file_extension(original_name):
         flash('Invalid file format. Please upload a PDF or DOCX document.', 'danger')
         return redirect(url_for('resume.index'))
 
@@ -65,7 +66,11 @@ def upload():
     target_company = request.form.get('target_company', 'General Placement').strip()
     job_description = request.form.get('job_description', '').strip()
 
-    filename = secure_filename(file.filename)
+    filename = secure_filename(original_name)
+    if not filename or '.' not in filename:
+        ext = original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else 'pdf'
+        filename = f"resume.{ext}"
+
     save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], f"user_{current_user.id}_{filename}")
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     file.save(save_path)
@@ -82,6 +87,11 @@ def upload():
         flash('Resume uploaded and evaluated successfully with CareerPilot AI Intelligence Engine!', 'success')
         return redirect(url_for('resume.analysis_detail', analysis_id=analysis.id))
     except Exception as e:
+        if os.path.exists(save_path):
+            try:
+                os.remove(save_path)
+            except Exception:
+                pass
         current_app.logger.error(f"Resume Evaluation Failed: {e}")
         flash(f"Failed to process resume: {str(e)}", "danger")
         return redirect(url_for('resume.index'))

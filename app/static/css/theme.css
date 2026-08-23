@@ -193,11 +193,39 @@ p, .text-secondary {
     border-radius: var(--radius-lg);
     box-shadow: var(--card-shadow);
     transition: var(--transition-smooth);
+    position: relative;
+    z-index: 1;
 }
 
 .glass-card:hover {
     transform: translateY(-2px);
     border-color: var(--primary-color);
+}
+
+/* Quick Action Buttons Theme-Aware Styling */
+.btn-quick-action {
+    background-color: var(--input-bg) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--card-border) !important;
+    transition: var(--transition-smooth);
+}
+
+.btn-quick-action:hover {
+    background-color: var(--dropdown-hover) !important;
+    border-color: var(--primary-color) !important;
+    transform: translateY(-1px);
+    color: var(--primary-color) !important;
+}
+
+/* Theme-Aware Badges & Progress Trackers */
+.badge-theme-subtle {
+    background-color: var(--input-bg) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--card-border) !important;
+}
+
+.progress-track-theme {
+    background-color: rgba(148, 163, 184, 0.2) !important;
 }
 
 /* Form Controls & Text Visibility Fixes */
@@ -282,6 +310,8 @@ p, .text-secondary {
     border-bottom: 1px solid var(--navbar-border);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
+    position: relative;
+    z-index: 1050;
 }
 
 .navbar-custom .nav-link {
@@ -292,6 +322,8 @@ p, .text-secondary {
     background: var(--sidebar-bg) !important;
     border-right: 1px solid var(--sidebar-border);
     min-height: 100vh;
+    position: relative;
+    z-index: 1040;
 }
 
 .sidebar-link {
@@ -317,7 +349,8 @@ p, .text-secondary {
     background-color: var(--dropdown-bg) !important;
     border: 1px solid var(--dropdown-border) !important;
     color: var(--dropdown-text) !important;
-    box-shadow: var(--card-shadow);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35) !important;
+    z-index: 1070 !important;
 }
 
 .dropdown-item {

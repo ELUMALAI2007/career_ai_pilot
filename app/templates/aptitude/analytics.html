@@ -6,19 +6,56 @@
     <div class="glass-card p-4 mb-4 border-start border-success border-4 rounded-3 shadow-sm">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <h2 class="fw-bold text-white mb-1"><i class="fa-solid fa-chart-pie text-success me-2"></i> Aptitude Performance Analytics</h2>
+                <h2 class="fw-bold text-body mb-1"><i class="fa-solid fa-chart-pie text-success me-2"></i> Aptitude Performance Analytics</h2>
                 <p class="text-secondary mb-0">Detailed accuracy metrics, topic mastery breakdown, and historical score progression.</p>
             </div>
-            <a href="{{ url_for('aptitude.index') }}" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Aptitude Home</a>
+            <a href="{{ url_for('aptitude.index') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Aptitude Home</a>
         </div>
     </div>
+
+    <!-- Difficulty Breakdown Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+            <div class="glass-card p-3 border-start border-success border-4 rounded-3 shadow-sm">
+                <small class="text-secondary fw-semibold">🟢 Easy Level Accuracy</small>
+                <h3 class="fw-bold text-success mb-0 mt-1">{{ analytics.easy_accuracy }}%</h3>
+                <small class="text-muted">Beginner & fundamental questions</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="glass-card p-3 border-start border-warning border-4 rounded-3 shadow-sm">
+                <small class="text-secondary fw-semibold">🟡 Medium Level Accuracy</small>
+                <h3 class="fw-bold text-warning mb-0 mt-1">{{ analytics.medium_accuracy }}%</h3>
+                <small class="text-muted">Placement test level questions</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="glass-card p-3 border-start border-danger border-4 rounded-3 shadow-sm">
+                <small class="text-secondary fw-semibold">🔴 Hard Level Accuracy</small>
+                <h3 class="fw-bold text-danger mb-0 mt-1">{{ analytics.hard_accuracy }}%</h3>
+                <small class="text-muted">Competitive placement questions</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendations Card -->
+    {% if analytics.recommendations %}
+    <div class="glass-card p-4 mb-4 border-start border-info border-4 rounded-3 shadow-sm">
+        <h5 class="fw-bold text-body mb-2"><i class="fa-solid fa-lightbulb text-info me-2"></i> Personalized AI Recommendations</h5>
+        <ul class="mb-0 text-body fs-6 ps-3">
+            {% for rec in analytics.recommendations %}
+            <li class="mb-1">{{ rec }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
 
     <!-- Charts Row -->
     <div class="row g-4 mb-4">
         <!-- Score Trend Line Chart -->
         <div class="col-12 col-lg-6">
             <div class="glass-card p-4 h-100 border-0 shadow-sm">
-                <h5 class="fw-bold text-white mb-3"><i class="fa-solid fa-chart-line text-primary me-2"></i> Accuracy Score Trend</h5>
+                <h5 class="fw-bold text-body mb-3"><i class="fa-solid fa-chart-line text-primary me-2"></i> Accuracy Score Trend</h5>
                 <canvas id="scoreTrendChart" height="220"></canvas>
             </div>
         </div>
@@ -26,7 +63,7 @@
         <!-- Topic Mastery Radar Chart -->
         <div class="col-12 col-lg-6">
             <div class="glass-card p-4 h-100 border-0 shadow-sm">
-                <h5 class="fw-bold text-white mb-3"><i class="fa-solid fa-bullseye text-warning me-2"></i> Topic Mastery Radar</h5>
+                <h5 class="fw-bold text-body mb-3"><i class="fa-solid fa-bullseye text-warning me-2"></i> Topic Mastery Radar</h5>
                 <canvas id="topicMasteryChart" height="220"></canvas>
             </div>
         </div>
@@ -63,9 +100,9 @@ document.addEventListener("DOMContentLoaded", function() {
             labels: {{ analytics.topic_labels | tojson }},
             datasets: [{
                 label: 'Mastery %',
-                data: {{ analytics.topic_scores | tojson }},
+                data: {{ analytics.topic_values | tojson }},
                 borderColor: '#ffc107',
-                backgroundColor: 'rgba(255, 193, 7, 0.25)'
+                backgroundColor: 'rgba(255, 193, 7, 0.2)'
             }]
         },
         options: {

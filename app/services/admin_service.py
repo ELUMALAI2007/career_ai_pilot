@@ -13,12 +13,29 @@ class AdminService:
 
     @staticmethod
     def get_system_stats() -> dict:
-        """Retrieves system high-level statistics."""
+        """Retrieves real system statistics across all database tables."""
+        from app.models.user import User, Role
+        from app.models.aptitude import AptitudeQuestion, AptitudeAttempt, AptitudeTestResult
+        from app.models.coding import CodingSubmission
+        from app.models.interview import MockInterview
+        from app.models.resume import ResumeAnalysis
+
+        student_role = Role.query.filter_by(name='student').first()
+        student_role_id = student_role.id if student_role else None
+
         return {
             "total_users": User.query.count(),
+            "total_students": User.query.filter_by(role_id=student_role_id).count() if student_role_id else User.query.count(),
+            "active_students": User.query.filter_by(is_active=True, status='approved').count(),
             "pending_requests": User.query.filter_by(status='pending').count(),
             "approved_users": User.query.filter_by(status='approved').count(),
-            "rejected_users": User.query.filter_by(status='rejected').count()
+            "rejected_users": User.query.filter_by(status='rejected').count(),
+            "total_aptitude_questions": AptitudeQuestion.query.count(),
+            "total_aptitude_attempts": AptitudeAttempt.query.count(),
+            "total_mock_tests": AptitudeTestResult.query.count(),
+            "total_resume_analyses": ResumeAnalysis.query.count(),
+            "total_coding_submissions": CodingSubmission.query.count(),
+            "total_interview_sessions": MockInterview.query.count()
         }
 
     @staticmethod

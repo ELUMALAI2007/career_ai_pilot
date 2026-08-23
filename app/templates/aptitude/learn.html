@@ -6,10 +6,10 @@
     <div class="glass-card p-4 mb-4 border-start border-info border-4 rounded-3 shadow-sm">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <h2 class="fw-bold text-white mb-1"><i class="fa-solid fa-book-open text-info me-2"></i> Aptitude Learning Hub</h2>
+                <h2 class="fw-bold text-body mb-1"><i class="fa-solid fa-book-open text-info me-2"></i> Aptitude Learning Hub</h2>
                 <p class="text-secondary mb-0">Master 64 core placement topics from Foundation to Master level.</p>
             </div>
-            <a href="{{ url_for('aptitude.index') }}" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Aptitude Home</a>
+            <a href="{{ url_for('aptitude.index') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Aptitude Home</a>
         </div>
     </div>
 
@@ -36,7 +36,7 @@
                                 <span class="badge bg-secondary bg-opacity-20 text-info font-monospace fs-7">Topic {{ loop.index }}</span>
                                 <i class="fa-solid fa-graduation-cap text-muted fs-6"></i>
                             </div>
-                            <h6 class="fw-bold text-white mb-2">{{ topic }}</h6>
+                            <h6 class="fw-bold text-body mb-2">{{ topic }}</h6>
                             <p class="text-muted fs-7 mb-3">Concepts, key formulas, shortcuts & 6-level difficulty practice.</p>
                         </div>
                         <a href="{{ url_for('aptitude.topic_detail', topic_name=topic) }}" class="btn btn-sm btn-outline-info w-100 fw-semibold">

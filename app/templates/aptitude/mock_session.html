@@ -6,7 +6,7 @@
     <!-- Exam Header with Timer -->
     <div class="glass-card p-3 mb-4 border-start border-danger border-4 rounded-3 shadow-sm d-flex justify-content-between align-items-center">
         <div>
-            <h5 class="fw-bold text-white mb-0">{{ session.title }}</h5>
+            <h5 class="fw-bold text-body mb-0">{{ session.title }}</h5>
             <small class="text-secondary">{{ session.total_questions }} Questions | Duration: {{ session.duration_minutes }} Mins</small>
         </div>
         <div class="d-flex align-items-center gap-3">
@@ -27,6 +27,7 @@
             <!-- Left Side: Current Active Question View -->
             <div class="col-12 col-lg-8 col-xl-9">
                 {% for q in questions %}
+                {% set q_idx = loop.index %}
                 <div class="exam-q-card glass-card p-4 border-0 shadow-sm {% if not loop.first %}d-none{% endif %}" id="exam_q_{{ loop.index }}" data-qid="{{ q.id }}">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="badge bg-primary bg-opacity-20 text-primary px-3 py-1 font-monospace">
@@ -38,16 +39,16 @@
                         </div>
                     </div>
 
-                    <h5 class="fw-semibold text-white mb-4 leading-relaxed">{{ q.question_text }}</h5>
+                    <h5 class="fw-semibold text-body mb-4 leading-relaxed">{{ q.question_text }}</h5>
 
                     <div class="options-container mb-4">
                         {% for opt_key in ['a', 'b', 'c', 'd'] %}
-                        {% set opt_val = attribute(q, 'option_' ~ opt_key) %}
-                        <div class="option-choice glass-card p-3 mb-2 border border-secondary border-opacity-25 rounded-3 cursor-pointer hover-border-primary text-white d-flex align-items-center"
+                        {% set opt_val = q|get_field('option_' ~ opt_key) %}
+                        <div class="option-choice glass-card p-3 mb-2 border border-secondary border-opacity-25 rounded-3 cursor-pointer hover-border-primary text-body d-flex align-items-center"
                              id="m_opt_{{ q.id }}_{{ opt_key|upper }}"
-                             onclick="selectExamOption({{ q.id }}, '{{ opt_key|upper }}', {{ loop.parent.loop.index }})">
+                             onclick="selectExamOption({{ q.id }}, '{{ opt_key|upper }}', {{ q_idx }})">
                             <span class="badge bg-secondary me-3 px-2.5 py-1.5 font-monospace">{{ opt_key|upper }}</span>
-                            <span>{{ opt_val }}</span>
+                            <span class="fw-medium text-body">{{ opt_val }}</span>
                         </div>
                         {% endfor %}
                     </div>
@@ -58,7 +59,7 @@
                         </button>
                         <div class="d-flex gap-2">
                             {% if not loop.first %}
-                            <button type="button" class="btn btn-outline-light btn-sm px-3" onclick="showExamQ({{ loop.index - 1 }})">Previous</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="showExamQ({{ loop.index - 1 }})">Previous</button>
                             {% endif %}
                             <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="clearAnswer({{ q.id }}, {{ loop.index }})">Clear Choice</button>
                             {% if not loop.last %}
@@ -73,7 +74,7 @@
             <!-- Right Side: Question Palette & Navigation Grid -->
             <div class="col-12 col-lg-4 col-xl-3">
                 <div class="glass-card p-4 border-0 shadow-sm sticky-top" style="top: 20px;">
-                    <h6 class="fw-bold text-white mb-3"><i class="fa-solid fa-grip me-2 text-primary"></i> Question Palette</h6>
+                    <h6 class="fw-bold text-body mb-3"><i class="fa-solid fa-grip me-2 text-primary"></i> Question Palette</h6>
                     
                     <!-- Palette Summary Legend -->
                     <div class="row g-2 mb-3 fs-7">
@@ -91,14 +92,14 @@
                         {% endfor %}
                     </div>
 
-                    <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary border-opacity-25 mb-3">
+                    <div class="p-3 badge-theme-subtle rounded-3 border border-secondary border-opacity-25 mb-3">
                         <small class="text-secondary d-block">Unanswered Questions: <strong class="text-warning" id="unansweredCount">{{ questions|length }}</strong></small>
                         <small class="text-secondary d-block">Answered Questions: <strong class="text-success" id="answeredCount">0</strong></small>
                         <small class="text-secondary d-block">Marked for Review: <strong class="text-info" id="markedCount">0</strong></small>
                     </div>
 
                     <button type="button" class="btn btn-danger w-100 py-2 fw-bold" onclick="confirmSubmit()">
-                        Submit Test Session
+                        Submit Final Exam
                     </button>
                 </div>
             </div>
@@ -106,107 +107,125 @@
     </form>
 </div>
 
+{% block extra_js %}
 <script>
-let remainingSeconds = {{ remaining_seconds }};
-let answersState = {};
-let markedState = {};
-let totalQ = {{ questions|length }};
-let currentQIdx = 1;
+const durationMins = {{ session.duration_minutes }};
+let totalSeconds = durationMins * 60;
+let examAnswers = {};
+let markedQuestions = {};
+let currentQIndex = 1;
 
-// Server-side timer countdown
-function runTimer() {
-    let t = setInterval(() => {
-        if (remainingSeconds <= 0) {
-            clearInterval(t);
-            alert("Time is up! Submitting your test automatically...");
-            document.getElementById('mockExamForm').submit();
-            return;
-        }
-        remainingSeconds--;
-        let m = String(Math.floor(remainingSeconds / 60)).padStart(2, '0');
-        let s = String(remainingSeconds % 60).padStart(2, '0');
-        document.getElementById('clockDisplay').innerText = `${m}:${s}`;
-    }, 1000);
-}
-runTimer();
+// Start Countdown Timer
+const timerInterval = setInterval(function() {
+    totalSeconds--;
+    if (totalSeconds <= 0) {
+        clearInterval(timerInterval);
+        document.getElementById('clockDisplay').textContent = "00:00";
+        alert("Time is up! Submitting your exam automatically.");
+        submitFinalForm();
+        return;
+    }
 
-function showExamQ(idx) {
-    document.querySelectorAll('.exam-q-card').forEach(c => c.classList.add('d-none'));
-    let target = document.getElementById(`exam_q_${idx}`);
+    let mins = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+    let secs = String(totalSeconds % 60).padStart(2, '0');
+    document.getElementById('clockDisplay').textContent = `${mins}:${secs}`;
+}, 1000);
+
+function showExamQ(index) {
+    document.querySelectorAll('.exam-q-card').forEach(el => el.classList.add('d-none'));
+    const target = document.getElementById(`exam_q_${index}`);
     if (target) {
         target.classList.remove('d-none');
-        currentQIdx = idx;
+        currentQIndex = index;
+        updatePaletteStyles();
     }
-    updatePalette();
 }
 
-function selectExamOption(qid, optKey, qIdx) {
-    answersState[qid] = optKey;
-    let card = document.getElementById(`exam_q_${qIdx}`);
-    card.querySelectorAll('.option-choice').forEach(c => c.classList.remove('border-primary', 'bg-primary', 'bg-opacity-20'));
-    let chosen = document.getElementById(`m_opt_${qid}_${optKey}`);
-    if (chosen) chosen.classList.add('border-primary', 'bg-primary', 'bg-opacity-20');
-    
-    document.getElementById('answers_json_input').value = JSON.stringify(answersState);
-    updatePalette();
+function selectExamOption(qid, choice, qIndex) {
+    examAnswers[qid] = choice;
+
+    // Reset option styling
+    const card = document.getElementById(`exam_q_${qIndex}`);
+    card.querySelectorAll('.option-choice').forEach(el => {
+        el.classList.remove('border-primary', 'bg-primary', 'bg-opacity-20');
+    });
+
+    const optEl = document.getElementById(`m_opt_${qid}_${choice}`);
+    if (optEl) {
+        optEl.classList.add('border-primary', 'bg-primary', 'bg-opacity-20');
+    }
+
+    updatePaletteStyles();
 }
 
-function clearAnswer(qid, qIdx) {
-    delete answersState[qid];
-    let card = document.getElementById(`exam_q_${qIdx}`);
-    card.querySelectorAll('.option-choice').forEach(c => c.classList.remove('border-primary', 'bg-primary', 'bg-opacity-20'));
-    document.getElementById('answers_json_input').value = JSON.stringify(answersState);
-    updatePalette();
+function clearAnswer(qid, qIndex) {
+    delete examAnswers[qid];
+    const card = document.getElementById(`exam_q_${qIndex}`);
+    card.querySelectorAll('.option-choice').forEach(el => {
+        el.classList.remove('border-primary', 'bg-primary', 'bg-opacity-20');
+    });
+    updatePaletteStyles();
 }
 
-function toggleMarkReview(qid, qIdx) {
-    markedState[qid] = !markedState[qid];
-    let btnText = document.getElementById(`mark_btn_text_${qIdx}`);
-    btnText.innerText = markedState[qid] ? "Unmark Review" : "Mark for Review";
-    updatePalette();
+function toggleMarkReview(qid, qIndex) {
+    if (markedQuestions[qid]) {
+        delete markedQuestions[qid];
+        document.getElementById(`mark_btn_text_${qIndex}`).textContent = "Mark for Review";
+    } else {
+        markedQuestions[qid] = true;
+        document.getElementById(`mark_btn_text_${qIndex}`).textContent = "Unmark Review";
+    }
+    updatePaletteStyles();
 }
 
-function updatePalette() {
+function updatePaletteStyles() {
+    const totalQ = {{ questions|length }};
     let answered = 0;
     let marked = 0;
 
     for (let i = 1; i <= totalQ; i++) {
-        let card = document.getElementById(`exam_q_${i}`);
-        let qid = card.getAttribute('data-qid');
-        let btn = document.getElementById(`p_btn_${i}`);
+        const btn = document.getElementById(`p_btn_${i}`);
+        const qCard = document.getElementById(`exam_q_${i}`);
+        const qid = qCard.getAttribute('data-qid');
 
-        btn.className = "btn btn-sm font-monospace palette-btn";
-        if (i === currentQIdx) {
-            btn.classList.add('btn-primary');
-        } else if (markedState[qid]) {
-            btn.classList.add('btn-warning');
+        btn.className = "btn btn-sm font-monospace palette-btn ";
+
+        if (i === currentQIndex) {
+            btn.classList.add('btn-primary', 'border-2', 'border-white');
+        } else if (markedQuestions[qid]) {
+            btn.classList.add('btn-warning', 'text-dark');
             marked++;
-        } else if (answersState[qid]) {
+        } else if (examAnswers[qid]) {
             btn.classList.add('btn-success');
             answered++;
         } else {
             btn.classList.add('btn-secondary');
         }
-
-        if (answersState[qid] && !markedState[qid]) answered++;
-        if (markedState[qid]) marked++;
     }
 
-    let ansCount = Object.keys(answersState).length;
-    document.getElementById('answeredCount').innerText = ansCount;
-    document.getElementById('unansweredCount').innerText = totalQ - ansCount;
-    document.getElementById('markedCount').innerText = Object.values(markedState).filter(Boolean).length;
+    document.getElementById('answeredCount').textContent = Object.keys(examAnswers).length;
+    document.getElementById('unansweredCount').textContent = totalQ - Object.keys(examAnswers).length;
+    document.getElementById('markedCount').textContent = Object.keys(markedQuestions).length;
 }
 
 function confirmSubmit() {
-    let unans = totalQ - Object.keys(answersState).length;
-    let msg = unans > 0 ? `You have ${unans} unanswered questions. Are you sure you want to submit?` : "Are you sure you want to submit your examination?";
+    const totalQ = {{ questions|length }};
+    const answeredCount = Object.keys(examAnswers).length;
+    const msg = `Are you sure you want to submit?\n\nAnswered: ${answeredCount} of ${totalQ} questions.`;
     if (confirm(msg)) {
-        document.getElementById('answers_json_input').value = JSON.stringify(answersState);
-        document.getElementById('mockExamForm').submit();
+        submitFinalForm();
     }
 }
 
-updatePalette();
+function submitFinalForm() {
+    document.getElementById('answers_json_input').value = JSON.stringify(examAnswers);
+    document.getElementById('mockExamForm').submit();
+}
+
+// Initial Palette setup
+document.addEventListener('DOMContentLoaded', function() {
+    updatePaletteStyles();
+});
 </script>
+{% endblock %}
 {% endblock %}

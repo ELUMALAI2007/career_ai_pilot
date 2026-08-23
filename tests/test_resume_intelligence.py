@@ -196,3 +196,45 @@ def test_version_comparison_matrix(app_ctx, test_user):
     assert matrix["deltas"]["ats_delta"] == 16.0
     assert "Docker" in matrix["deltas"]["added_skills"]
     assert "React" in matrix["deltas"]["added_skills"]
+
+
+def test_special_character_skill_extraction():
+    """Verifies that skills with special characters like C++, C#, and REST API are correctly extracted."""
+    sample = """
+    Jane Developer
+    Skills: C++, C#, Python, SQL, REST API, Docker
+    """
+    sections = ResumeParser.parse_sections(sample)
+    skills = sections["extracted_skills"]
+    assert "C++" in skills
+    assert "C#" in skills
+    assert "Python" in skills
+    assert "REST API" in skills
+
+
+def test_quality_score_capping():
+    """Verifies that quality score and overall score are capped at 100.0 max."""
+    sample = """
+    Expert Engineer
+    - Developed scalable microservices using Python and C++ processing 100,000+ requests daily.
+    - Automated CI/CD deployment pipelines achieving 99.9% uptime.
+    - Engineered high throughput cache layer using Redis saving 50% database latency.
+    """
+    metadata = {"page_count": 1, "word_count": 300, "has_tables": False, "has_images": False}
+    contact = ResumeParser.parse_contact_info(sample)
+    sections = ResumeParser.parse_sections(sample)
+    completeness, _ = ResumeParser.calculate_completeness_score(contact, sections)
+
+    eval_result = ResumeEvaluator.evaluate_all(
+        text=sample,
+        metadata=metadata,
+        contact=contact,
+        sections=sections,
+        completeness_score=completeness,
+        target_role="Software Engineer"
+    )
+
+    scores = eval_result["scores"]
+    assert scores["quality_score"] <= 100.0
+    assert scores["overall_score"] <= 100.0
+

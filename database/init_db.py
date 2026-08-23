@@ -35,6 +35,23 @@ def apply_schema_migrations():
             if 'status' not in columns:
                 print("Adding status column to users table...")
                 conn.execute(text("ALTER TABLE users ADD COLUMN status VARCHAR(20) DEFAULT 'approved'"))
+            if 'is_verified' not in columns:
+                print("Adding is_verified column to users table...")
+                conn.execute(text("ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT 0"))
+            if 'last_login_at' not in columns:
+                print("Adding last_login_at column to users table...")
+                conn.execute(text("ALTER TABLE users ADD COLUMN last_login_at DATETIME"))
+            conn.commit()
+
+    if 'aptitude_questions' in inspector.get_table_names():
+        apt_cols = [c['name'] for c in inspector.get_columns('aptitude_questions')]
+        with db.engine.connect() as conn:
+            if 'is_active' not in apt_cols:
+                print("Adding is_active column to aptitude_questions table...")
+                conn.execute(text("ALTER TABLE aptitude_questions ADD COLUMN is_active BOOLEAN DEFAULT 1"))
+            if 'updated_at' not in apt_cols:
+                print("Adding updated_at column to aptitude_questions table...")
+                conn.execute(text("ALTER TABLE aptitude_questions ADD COLUMN updated_at DATETIME"))
             conn.commit()
 
 
@@ -60,6 +77,17 @@ def init_database():
 
         db.session.commit()
 
+        # Backfill any existing users without a role_id
+        unassigned_users = User.query.filter_by(role_id=None).all()
+        for u in unassigned_users:
+            if 'admin' in u.email.lower():
+                u.role_id = admin_role.id
+            else:
+                u.role_id = student_role.id
+        if unassigned_users:
+            db.session.commit()
+            print(f"Updated {len(unassigned_users)} user(s) with default roles.")
+
         # Seed Default Admin Account
         admin_user = User.query.filter_by(email='admin@careerpilot.ai').first()
         if not admin_user:
@@ -74,6 +102,13 @@ def init_database():
             db.session.add(admin_user)
             db.session.commit()
             print("Admin account seeded: admin@careerpilot.ai / AdminSecure123!")
+
+        # Seed Aptitude Question Bank if empty
+        from app.models.aptitude import AptitudeQuestion
+        if AptitudeQuestion.query.count() == 0:
+            print("Seeding 1,000 verified Aptitude questions into database...")
+            from generate_question_bank import generate_batch
+            generate_batch()
 
         print("Database initialization completed successfully.")
 

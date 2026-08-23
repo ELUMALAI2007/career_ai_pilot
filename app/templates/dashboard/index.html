@@ -1,38 +1,466 @@
 {% extends "base.html" %}
-{% block title %}Dashboard - CareerPilot AI{% endblock %}
+{% block title %}Placement Command Center — CareerPilot AI{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<!-- Top Hero Header -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
     <div>
-        <h2 class="fw-bold mb-1">Welcome back, {{ current_user.full_name }}! 👋</h2>
-        <p class="text-muted mb-0">Here is your placement preparation snapshot for today.</p>
+        <h2 class="fw-bold mb-1 text-body">{{ summary.greeting }}</h2>
+        <p class="text-muted mb-0">Your daily placement preparation snapshot & command center.</p>
     </div>
-    <a href="{{ url_for('interview.index') }}" class="btn btn-primary-custom">Start AI Mock Interview</a>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('analytics.index') }}" class="btn btn-outline-secondary rounded-pill px-3">
+            <i class="fa-solid fa-chart-pie me-1"></i> View Detailed Analytics
+        </a>
+        <a href="{{ summary.ai_recommendation.action_url }}" class="btn btn-primary-custom rounded-pill px-4">
+            <i class="fa-solid fa-play me-2"></i> {{ summary.ai_recommendation.action_text }}
+        </a>
+    </div>
 </div>
 
+<!-- Row 1: Hero Readiness Card + 4 Metric Cards -->
 <div class="row g-4 mb-4">
-    <div class="col-md-3">
-        <div class="glass-card p-4">
-            <h6 class="text-muted mb-2">Readiness Score</h6>
-            <h2 class="fw-bold text-success mb-0">{{ summary.analytics.overall_readiness }}%</h2>
+    <!-- Placement Readiness Hero Card -->
+    <div class="col-lg-4">
+        <div class="glass-card p-4 h-100 d-flex flex-column justify-content-between">
+            <div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small fw-bold text-uppercase tracking-wider">PLACEMENT READINESS</span>
+                    <span class="badge badge-theme-subtle text-info small rounded-pill px-2.5 py-1">
+                        Confidence: {{ summary.intelligence.confidence }}
+                    </span>
+                </div>
+                <div class="d-flex align-items-baseline gap-3 my-2">
+                    <h1 class="display-4 fw-bold text-primary mb-0">{{ summary.intelligence.overall_score }}<span class="fs-4 text-muted">/100</span></h1>
+                    <div>
+                        <span class="{{ summary.intelligence.status_badge }} px-3 py-1.5 fs-6 rounded-pill mb-1 d-inline-block">{{ summary.intelligence.placement_status }}</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">{{ summary.intelligence.status_desc }}</p>
+            </div>
+
+            <div class="pt-3 border-top border-theme mt-3 d-flex justify-content-between align-items-center">
+                <small class="text-muted"><i class="fa-solid fa-chart-line text-info me-1"></i> Single Source of Truth</small>
+                <a href="{{ url_for('analytics.index') }}" class="small text-primary fw-bold text-decoration-none">
+                    Deep Analytics <i class="fa-solid fa-arrow-right ms-1"></i>
+                </a>
+            </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="glass-card p-4">
-            <h6 class="text-muted mb-2">Aptitude Score</h6>
-            <h2 class="fw-bold text-primary mb-0">{{ summary.analytics.aptitude_score }}%</h2>
+
+    <!-- 4 Compact Domain Metric Cards -->
+    <div class="col-lg-8">
+        <div class="row g-3 h-100">
+            <!-- Aptitude -->
+            <div class="col-md-6 col-xl-3">
+                <div class="glass-card p-3 h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small fw-bold">APTITUDE</span>
+                            <i class="fa-solid fa-calculator text-primary fs-5"></i>
+                        </div>
+                        {% if summary.intelligence.modules.aptitude.status == 'Available' %}
+                            <h3 class="fw-bold text-body mb-1">{{ summary.intelligence.modules.aptitude.score }}%</h3>
+                            <div class="small text-muted mb-0">Accuracy: <span class="fw-bold text-body">{{ summary.intelligence.modules.aptitude.accuracy_pct }}%</span></div>
+                        {% else %}
+                            <span class="badge bg-secondary mb-2">Not attempted</span>
+                            <div class="extra-small text-muted">No test attempts logged</div>
+                        {% endif %}
+                    </div>
+                    <div class="pt-2 mt-2">
+                        <a href="{{ url_for('aptitude.index') }}" class="btn btn-sm btn-outline-primary w-100 font-size-12">
+                            {% if summary.intelligence.modules.aptitude.status == 'Available' %}Practice Aptitude{% else %}Start Practice{% endif %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coding -->
+            <div class="col-md-6 col-xl-3">
+                <div class="glass-card p-3 h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small fw-bold">CODING & DSA</span>
+                            <i class="fa-solid fa-code text-success fs-5"></i>
+                        </div>
+                        {% if summary.intelligence.modules.coding.status == 'Available' %}
+                            <h3 class="fw-bold text-body mb-1">{{ summary.intelligence.modules.coding.score }}%</h3>
+                            <div class="small text-muted mb-0">Solved: <span class="fw-bold text-body">{{ summary.intelligence.modules.coding.problems_solved }}</span> problems</div>
+                        {% else %}
+                            <span class="badge bg-secondary mb-2">Not attempted</span>
+                            <div class="extra-small text-muted">No DSA code submissions</div>
+                        {% endif %}
+                    </div>
+                    <div class="pt-2 mt-2">
+                        <a href="{{ url_for('coding.index') }}" class="btn btn-sm btn-outline-success w-100 font-size-12">
+                            {% if summary.intelligence.modules.coding.status == 'Available' %}Practice Coding{% else %}Start Practice{% endif %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Communication -->
+            <div class="col-md-6 col-xl-3">
+                <div class="glass-card p-3 h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small fw-bold">COMMUNICATION</span>
+                            <i class="fa-solid fa-comments text-info fs-5"></i>
+                        </div>
+                        {% if summary.intelligence.modules.communication.status == 'Available' %}
+                            <h3 class="fw-bold text-body mb-1">{{ summary.intelligence.modules.communication.score }}%</h3>
+                            <div class="small text-muted mb-0">Grammar: <span class="fw-bold text-body">{{ summary.intelligence.modules.communication.grammar_score }}</span></div>
+                        {% else %}
+                            <span class="badge bg-secondary mb-2">Not attempted</span>
+                            <div class="extra-small text-muted">No soft skills practice</div>
+                        {% endif %}
+                    </div>
+                    <div class="pt-2 mt-2">
+                        <a href="{{ url_for('communication.index') }}" class="btn btn-sm btn-outline-info w-100 font-size-12">
+                            {% if summary.intelligence.modules.communication.status == 'Available' %}Practice Soft Skills{% else %}Start Practice{% endif %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mock Interview -->
+            <div class="col-md-6 col-xl-3">
+                <div class="glass-card p-3 h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small fw-bold">INTERVIEW</span>
+                            <i class="fa-solid fa-user-tie text-warning fs-5"></i>
+                        </div>
+                        {% if summary.intelligence.modules.interview.status == 'Available' %}
+                            <h3 class="fw-bold text-body mb-1">{{ summary.intelligence.modules.interview.score }}%</h3>
+                            <div class="small text-muted mb-0">Sessions: <span class="fw-bold text-body">{{ summary.intelligence.modules.interview.completed_interviews }}</span></div>
+                        {% else %}
+                            <span class="badge bg-secondary mb-2">Not attempted</span>
+                            <div class="extra-small text-muted">No mock interviews taken</div>
+                        {% endif %}
+                    </div>
+                    <div class="pt-2 mt-2">
+                        <a href="{{ url_for('interview.index') }}" class="btn btn-sm btn-outline-warning w-100 font-size-12">
+                            {% if summary.intelligence.modules.interview.status == 'Available' %}Take Interview{% else %}Start Interview{% endif %}
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="glass-card p-4">
-            <h6 class="text-muted mb-2">Coding Score</h6>
-            <h2 class="fw-bold text-info mb-0">{{ summary.analytics.coding_score }}%</h2>
+</div>
+
+<!-- Row 2: Today's Target Checklist + AI Recommendation -->
+<div class="row g-4 mb-4">
+    <!-- Today's Target Checklist -->
+    <div class="col-lg-7">
+        <div class="glass-card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0 text-body"><i class="fa-solid fa-bullseye text-danger me-2"></i> Today's Target</h5>
+                <span class="badge badge-theme-subtle">
+                    Progress: {{ summary.today_targets.completed_count }}/{{ summary.today_targets.total_count }} Completed
+                </span>
+            </div>
+            
+            <div class="progress progress-track-theme mb-3" style="height: 6px;">
+                <div class="progress-bar bg-danger" style="width: {{ summary.today_targets.progress_pct }}%;"></div>
+            </div>
+
+            <div class="list-group list-group-flush bg-transparent">
+                {% for target in summary.today_targets.checklist %}
+                    <div class="list-group-item bg-transparent border-bottom border-secondary border-opacity-25 px-0 py-2.5 d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-3">
+                            {% if target.completed %}
+                                <i class="fa-solid fa-circle-check text-success fs-5"></i>
+                                <div>
+                                    <span class="text-decoration-line-through text-muted fw-bold">{{ target.title }}</span>
+                                    <span class="badge bg-secondary ms-2 small">{{ target.category }}</span>
+                                </div>
+                            {% else %}
+                                <i class="fa-regular fa-circle text-muted fs-5"></i>
+                                <div>
+                                    <span class="fw-bold text-body">{{ target.title }}</span>
+                                    <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25 ms-2 small">{{ target.category }}</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <a href="{{ target.url }}" class="btn btn-sm btn-outline-info rounded-pill px-3">
+                            {% if target.completed %}Review{% else %}Start{% endif %}
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="glass-card p-4">
-            <h6 class="text-muted mb-2">Interview Rating</h6>
-            <h2 class="fw-bold text-warning mb-0">{{ summary.analytics.interview_score }}%</h2>
+
+    <!-- AI Career Pilot Recommendation Card -->
+    <div class="col-lg-5">
+        <div class="glass-card p-4 h-100 border-primary border-opacity-50 d-flex flex-column justify-content-between">
+            <div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold text-primary"><i class="fa-solid fa-robot me-2"></i> CareerPilot AI Recommendation</span>
+                    <span class="badge bg-primary text-white">{{ summary.ai_recommendation.badge }}</span>
+                </div>
+                <h5 class="fw-bold text-body mb-2">{{ summary.ai_recommendation.title }}</h5>
+                <p class="text-muted small mb-0">{{ summary.ai_recommendation.text }}</p>
+            </div>
+
+            <div class="pt-3 border-top border-theme mt-3">
+                <a href="{{ summary.ai_recommendation.action_url }}" class="btn btn-primary-custom w-100 rounded-pill fw-bold">
+                    <i class="fa-solid fa-bolt me-1"></i> {{ summary.ai_recommendation.action_text }}
+                </a>
+            </div>
         </div>
     </div>
+</div>
+
+<!-- Row 3: Continue Learning Target + Recent Activity Timeline -->
+<div class="row g-4 mb-4">
+    <!-- Continue Learning Target -->
+    <div class="col-lg-5">
+        <div class="glass-card p-4 h-100 d-flex flex-column justify-content-between">
+            <div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold text-success"><i class="fa-solid fa-circle-play me-2"></i> Continue Learning</span>
+                    <span class="badge bg-success bg-opacity-25 text-success">Last Active</span>
+                </div>
+                <h5 class="fw-bold text-body mb-1">{{ summary.continue_target.title }}</h5>
+                <p class="text-muted small mb-3">{{ summary.continue_target.sub_title }}</p>
+
+                <div class="d-flex justify-content-between text-muted small mb-1">
+                    <span>Module Completion</span>
+                    <span class="fw-bold text-success">{{ summary.continue_target.progress_pct }}%</span>
+                </div>
+                <div class="progress progress-track-theme" style="height: 6px;">
+                    <div class="progress-bar bg-success" style="width: {{ summary.continue_target.progress_pct }}%;"></div>
+                </div>
+            </div>
+
+            <div class="pt-3 border-top border-theme mt-3">
+                <a href="{{ summary.continue_target.action_url }}" class="btn btn-outline-success w-100 rounded-pill fw-bold">
+                    <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> {{ summary.continue_target.action_text }}
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity Timeline Feed -->
+    <div class="col-lg-7">
+        <div class="glass-card p-4 h-100">
+            <h5 class="fw-bold mb-3 text-body"><i class="fa-solid fa-clock-rotate-left text-info me-2"></i> Recent Activity Log</h5>
+            
+            {% if summary.recent_activities %}
+                <div class="list-group list-group-flush bg-transparent">
+                    {% for act in summary.recent_activities %}
+                        <div class="list-group-item bg-transparent border-bottom border-secondary border-opacity-25 px-0 py-2.5 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="p-2 badge-theme-subtle rounded">
+                                    <i class="fa-solid {{ act.icon }} fs-6"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-body small">{{ act.title }}</div>
+                                    <div class="extra-small text-muted">{{ act.status }}</div>
+                                </div>
+                            </div>
+                            <span class="badge badge-theme-subtle small">{{ act.time_str }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="fa-solid fa-inbox fs-2 mb-2 d-block text-secondary"></i>
+                    <p class="mb-2">No recent assessment attempts logged yet.</p>
+                    <a href="{{ url_for('aptitude.index') }}" class="btn btn-sm btn-outline-primary">Start Your First Assessment</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Row 4: Resume Status + Strength + Priority Gap -->
+<div class="row g-4 mb-4">
+    <!-- Resume Status -->
+    <div class="col-md-4">
+        <div class="glass-card p-4 h-100 d-flex flex-column justify-content-between">
+            <div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold text-body"><i class="fa-solid fa-file-contract text-primary me-2"></i> Resume Status</span>
+                    {% if summary.intelligence.modules.resume.status == 'Available' %}
+                        <span class="badge bg-primary">ATS Analyzed</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Not Analyzed</span>
+                    {% endif %}
+                </div>
+                {% if summary.intelligence.modules.resume.status == 'Available' %}
+                    <h3 class="fw-bold text-body mb-1">{{ summary.intelligence.modules.resume.ats_score }}% <span class="fs-6 text-muted">ATS Score</span></h3>
+                    <p class="text-muted small mb-0">File: <span class="fw-bold text-body">{{ summary.intelligence.modules.resume.filename }}</span></p>
+                {% else %}
+                    <p class="text-muted small mb-0">No resume uploaded yet. Upload your PDF CV for instant ATS evaluation.</p>
+                {% endif %}
+            </div>
+            <div class="pt-3 border-top border-theme mt-3">
+                <a href="{{ url_for('resume.index') }}" class="btn btn-sm btn-outline-primary w-100 fw-bold">
+                    {% if summary.intelligence.modules.resume.status == 'Available' %}Improve Resume{% else %}Analyze Resume{% endif %}
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Strongest Area -->
+    <div class="col-md-4">
+        <div class="glass-card p-4 h-100 d-flex flex-column justify-content-between">
+            <div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold text-success"><i class="fa-solid fa-shield-halved me-2"></i> Strongest Core Area</span>
+                    <span class="badge bg-success">Proven</span>
+                </div>
+                <h5 class="fw-bold text-body mb-1">{{ summary.intelligence.strengths[0].title if summary.intelligence.strengths else 'General Foundation' }}</h5>
+                <p class="text-muted small mb-0">{{ summary.intelligence.strengths[0].desc if summary.intelligence.strengths else 'Complete assessments to generate evidence.' }}</p>
+            </div>
+            <div class="pt-3 border-top border-theme mt-3">
+                <small class="text-success"><i class="fa-solid fa-check-circle me-1"></i> Highest performance rating</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Priority Improvement Gap -->
+    <div class="col-md-4">
+        <div class="glass-card p-4 h-100 d-flex flex-column justify-content-between">
+            <div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold text-warning"><i class="fa-solid fa-triangle-exclamation me-2"></i> Priority Improvement</span>
+                    <span class="badge bg-warning text-dark">High Priority</span>
+                </div>
+                <h5 class="fw-bold text-body mb-1">{{ summary.intelligence.weaknesses[0].title if summary.intelligence.weaknesses else 'Skill Gap Refinement' }}</h5>
+                <p class="text-muted small mb-0">{{ summary.intelligence.weaknesses[0].desc if summary.intelligence.weaknesses else 'Focus on practice sets.' }}</p>
+            </div>
+            <div class="pt-3 border-top border-theme mt-3">
+                <a href="{{ url_for('skill_gap.index') }}" class="btn btn-sm btn-outline-warning w-100 fw-bold">
+                    Practice & Close Gap
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 5: Target Career Role Snapshot + Quick Actions Grid -->
+<div class="row g-4 mb-4">
+    <!-- Role Snapshot -->
+    <div class="col-lg-5">
+        <div class="glass-card p-4 h-100 d-flex flex-column justify-content-between">
+            <div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0 text-body"><i class="fa-solid fa-briefcase text-primary me-2"></i> Target Role Matches</h5>
+                    <a href="{{ url_for('analytics.index') }}" class="small text-primary text-decoration-none fw-bold">View All →</a>
+                </div>
+                <div class="list-group list-group-flush bg-transparent">
+                    {% for r in summary.intelligence.role_suitability[:3] %}
+                        <div class="list-group-item bg-transparent border-bottom border-secondary border-opacity-25 px-0 py-2">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold text-body">{{ r.title }}</span>
+                                <span class="fw-bold text-success small">{{ r.match_pct }}% Match</span>
+                            </div>
+                            <div class="progress progress-track-theme" style="height: 4px;">
+                                <div class="progress-bar bg-success" style="width: {{ r.match_pct }}%;"></div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="pt-3 border-top border-theme mt-3">
+                <a href="{{ url_for('job_eligibility.index') }}" class="btn btn-sm btn-outline-info w-100 fw-bold">Check Company Eligibility</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Grid (12 Modules) -->
+    <div class="col-lg-7">
+        <div class="glass-card p-4 h-100">
+            <h5 class="fw-bold mb-3 text-body"><i class="fa-solid fa-bolt text-warning me-2"></i> Quick Actions</h5>
+            <div class="row g-2">
+                <div class="col-6 col-md-4">
+                    <a href="{{ url_for('aptitude.index') }}" class="btn btn-quick-action text-start w-100 p-2.5 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-calculator text-primary"></i> <span class="small fw-bold">Aptitude</span>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4">
+                    <a href="{{ url_for('coding.index') }}" class="btn btn-quick-action text-start w-100 p-2.5 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-code text-success"></i> <span class="small fw-bold">Coding DSA</span>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4">
+                    <a href="{{ url_for('communication.index') }}" class="btn btn-quick-action text-start w-100 p-2.5 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-comments text-info"></i> <span class="small fw-bold">Soft Skills</span>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4">
+                    <a href="{{ url_for('interview.index') }}" class="btn btn-quick-action text-start w-100 p-2.5 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-user-tie text-warning"></i> <span class="small fw-bold">Mock Interview</span>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4">
+                    <a href="{{ url_for('resume.index') }}" class="btn btn-quick-action text-start w-100 p-2.5 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-file-contract text-primary"></i> <span class="small fw-bold">Resume ATS</span>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4">
+                    <a href="{{ url_for('learning_roadmap.index') }}" class="btn btn-quick-action text-start w-100 p-2.5 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-route text-success"></i> <span class="small fw-bold">Roadmap</span>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4">
+                    <a href="{{ url_for('skill_gap.index') }}" class="btn btn-quick-action text-start w-100 p-2.5 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-danger"></i> <span class="small fw-bold">Skill Gap</span>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4">
+                    <a href="{{ url_for('company_prep.index') }}" class="btn btn-quick-action text-start w-100 p-2.5 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-building text-info"></i> <span class="small fw-bold">Company Prep</span>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4">
+                    <a href="{{ url_for('job_eligibility.index') }}" class="btn btn-quick-action text-start w-100 p-2.5 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-graduation-cap text-primary"></i> <span class="small fw-bold">Eligibility</span>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4">
+                    <a href="{{ url_for('planner.index') }}" class="btn btn-quick-action text-start w-100 p-2.5 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-calendar-check text-warning"></i> <span class="small fw-bold">Study Planner</span>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4">
+                    <a href="{{ url_for('ai_assistant.index') }}" class="btn btn-quick-action text-start w-100 p-2.5 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-brain text-success"></i> <span class="small fw-bold">AI Assistant</span>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4">
+                    <a href="{{ url_for('settings.index') }}" class="btn btn-quick-action text-start w-100 p-2.5 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-gear text-secondary"></i> <span class="small fw-bold">Settings</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer Navigation & Profile Status Bar -->
+<div class="glass-card p-3 border-theme d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div class="d-flex align-items-center gap-4">
+        <div>
+            <span class="text-muted small">Daily Streak:</span>
+            <span class="badge bg-danger ms-1 fw-bold"><i class="fa-solid fa-fire me-1"></i> {{ summary.streak_days }} Days</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small">Profile Setup:</span>
+            <div class="progress progress-track-theme" style="width: 100px; height: 6px;">
+                <div class="progress-bar bg-info" style="width: {{ summary.profile_completion }}%;"></div>
+            </div>
+            <span class="small text-info fw-bold">{{ summary.profile_completion }}%</span>
+        </div>
+    </div>
+    
+    <a href="{{ url_for('analytics.index') }}" class="btn btn-primary-custom rounded-pill px-4">
+        View Detailed Performance Analytics <i class="fa-solid fa-arrow-right ms-2"></i>
+    </a>
 </div>
 {% endblock %}

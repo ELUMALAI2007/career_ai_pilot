@@ -42,7 +42,9 @@ class AptitudeQuestion(db.Model):
     tags = db.Column(db.String(255), nullable=True)
     source_type = db.Column(db.String(20), default='generated')  # 'generated', 'admin_created'
     fingerprint = db.Column(db.String(64), unique=True, nullable=True, index=True)
+    is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     bookmarks = db.relationship('AptitudeBookmark', backref='question', lazy='dynamic', cascade='all, delete-orphan')
 
@@ -194,4 +196,110 @@ class AptitudeStreak(db.Model):
     last_activity_date = db.Column(db.Date, nullable=True)
     questions_today = db.Column(db.Integer, default=0)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class AptitudeGenerationLog(db.Model):
+    """Log tracking automated question generation and batch seeding tasks."""
+    __tablename__ = 'aptitude_generation_logs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    category = db.Column(db.String(100), nullable=True)
+    topic = db.Column(db.String(100), nullable=True)
+    difficulty = db.Column(db.String(20), nullable=True)
+    requested_count = db.Column(db.Integer, default=0)
+    generated_count = db.Column(db.Integer, default=0)
+    valid_count = db.Column(db.Integer, default=0)
+    duplicate_count = db.Column(db.Integer, default=0)
+    failed_count = db.Column(db.Integer, default=0)
+    started_at = db.Column(db.DateTime, default=datetime.utcnow)
+    completed_at = db.Column(db.DateTime, nullable=True)
+    status = db.Column(db.String(20), default='started')  # 'started', 'completed', 'failed'
+    error_message = db.Column(db.Text, nullable=True)
+
+
+class AptitudeCategoryPerformance(db.Model):
+    """Per-user category metrics breakdown."""
+    __tablename__ = 'aptitude_category_performance'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    category_name = db.Column(db.String(100), nullable=False)
+    questions_attempted = db.Column(db.Integer, default=0)
+    correct_count = db.Column(db.Integer, default=0)
+    accuracy = db.Column(db.Float, default=0.0)
+    avg_speed_seconds = db.Column(db.Float, default=0.0)
+    mastery_score = db.Column(db.Float, default=0.0)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (db.UniqueConstraint('user_id', 'category_name', name='_user_cat_performance_uc'),)
+
+
+class AptitudeDifficultyPerformance(db.Model):
+    """Per-user difficulty performance breakdown (Easy, Medium, Hard)."""
+    __tablename__ = 'aptitude_difficulty_performance'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    difficulty = db.Column(db.String(20), nullable=False)  # Easy, Medium, Hard
+    questions_attempted = db.Column(db.Integer, default=0)
+    correct_count = db.Column(db.Integer, default=0)
+    accuracy = db.Column(db.Float, default=0.0)
+    avg_speed_seconds = db.Column(db.Float, default=0.0)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (db.UniqueConstraint('user_id', 'difficulty', name='_user_diff_performance_uc'),)
+
+
+class AptitudeRecommendation(db.Model):
+    """Adaptive study recommendations generated from student performance analytics."""
+    __tablename__ = 'aptitude_recommendations'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    category = db.Column(db.String(100), nullable=True)
+    topic = db.Column(db.String(100), nullable=True)
+    recommended_difficulty = db.Column(db.String(20), default='Medium')
+    reason = db.Column(db.Text, nullable=False)
+    priority = db.Column(db.String(20), default='medium')  # 'low', 'medium', 'high'
+    is_completed = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=True)
+
+
+class AptitudeReadinessScore(db.Model):
+    """Audit log of calculated composite placement readiness scores."""
+    __tablename__ = 'aptitude_readiness_scores'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    accuracy_score = db.Column(db.Float, default=0.0)
+    speed_score = db.Column(db.Float, default=0.0)
+    consistency_score = db.Column(db.Float, default=0.0)
+    topic_mastery_score = db.Column(db.Float, default=0.0)
+    difficulty_score = db.Column(db.Float, default=0.0)
+    mock_score = db.Column(db.Float, default=0.0)
+    overall_score = db.Column(db.Integer, default=0)
+    calculated_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class AptitudeLevelProgress(db.Model):
+    """User progression stage metrics (Level 1 Candidate to Level 5 Expert)."""
+    __tablename__ = 'aptitude_level_progress'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    level = db.Column(db.Integer, default=1)
+    level_name = db.Column(db.String(50), default='Beginner')  # Beginner, Intermediate, Advanced, Placement Ready, Expert
+    questions_attempted = db.Column(db.Integer, default=0)
+    questions_correct = db.Column(db.Integer, default=0)
+    accuracy = db.Column(db.Float, default=0.0)
+    completion_percentage = db.Column(db.Float, default=0.0)
+    is_unlocked = db.Column(db.Boolean, default=True)
+    is_completed = db.Column(db.Boolean, default=False)
+    unlocked_at = db.Column(db.DateTime, default=datetime.utcnow)
+    completed_at = db.Column(db.DateTime, nullable=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (db.UniqueConstraint('user_id', 'level', name='_user_level_progress_uc'),)
+
 

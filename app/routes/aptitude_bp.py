@@ -4,11 +4,13 @@ Controller for Adaptive Aptitude Master, practice quizzes, timed mock examinatio
 """
 
 import json
+from typing import Optional
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
+from app import db
 from app.services.aptitude_service import AptitudeService
 from app.models.aptitude import AptitudeCategory, AptitudeQuestion, AptitudeTestResult, AptitudeAttempt
-from question_generators import QUANT_TOPICS, LOGICAL_TOPICS, VERBAL_TOPICS
+from app.utils.aptitude_validator import QUANT_TOPICS, LOGICAL_TOPICS, VERBAL_TOPICS, ALL_TOPICS
 
 aptitude_bp = Blueprint('aptitude', __name__)
 
@@ -23,7 +25,7 @@ def index():
     
     # Calculate recommended topic based on lowest topic mastery
     analytics = AptitudeService.get_analytics_data(current_user.id)
-    recommended_topic = "Percentage"
+    recommended_topic = "Percentages"
     if analytics["topic_labels"] and len(analytics["topic_labels"]) > 0:
         recommended_topic = analytics["topic_labels"][0]
 
@@ -32,14 +34,15 @@ def index():
         progress=progress,
         streak=streak,
         categories=categories,
-        recommended_topic=recommended_topic
+        recommended_topic=recommended_topic,
+        analytics=analytics
     )
 
 
 @aptitude_bp.route('/learn')
 @login_required
 def learn():
-    """Dedicated Aptitude Learning Hub listing all 64 topics."""
+    """Dedicated Aptitude Learning Hub listing all 55 core topics."""
     categories = AptitudeService.get_categories()
     topics_by_cat = {
         "Quantitative Aptitude": QUANT_TOPICS,
@@ -78,15 +81,43 @@ def topic_detail(topic_name: str):
 def practice():
     """Practice mode selector page."""
     categories = AptitudeService.get_categories()
+    topics_by_cat = {
+        "1": QUANT_TOPICS,
+        "2": LOGICAL_TOPICS,
+        "3": VERBAL_TOPICS
+    }
     all_topics = QUANT_TOPICS + LOGICAL_TOPICS + VERBAL_TOPICS
-    return render_template('aptitude/practice.html', categories=categories, all_topics=all_topics, levels=AptitudeService.LEVELS)
+    return render_template(
+        'aptitude/practice.html',
+        categories=categories,
+        all_topics=all_topics,
+        topics_by_cat=topics_by_cat,
+        levels=AptitudeService.LEVELS
+    )
 
 
 @aptitude_bp.route('/practice/start')
 @login_required
 def practice_start():
     """Launches an interactive practice set."""
-    category_id = request.args.get('category_id', type=int)
+    cat_arg = request.args.get('category_id') or request.args.get('category')
+    category_id = None
+    if cat_arg and str(cat_arg).strip().lower() not in ['all', '']:
+        if str(cat_arg).isdigit():
+            category_id = int(cat_arg)
+        else:
+            cat_clean = str(cat_arg).strip().lower()
+            if 'quant' in cat_clean:
+                cat_obj = AptitudeCategory.query.filter_by(name="Quantitative Aptitude").first()
+            elif 'logic' in cat_clean:
+                cat_obj = AptitudeCategory.query.filter_by(name="Logical Reasoning").first()
+            elif 'verb' in cat_clean:
+                cat_obj = AptitudeCategory.query.filter_by(name="Verbal Ability").first()
+            else:
+                cat_obj = AptitudeCategory.query.filter(AptitudeCategory.name.ilike(f"%{cat_clean}%")).first()
+            if cat_obj:
+                category_id = cat_obj.id
+
     topic = request.args.get('topic', default='all')
     difficulty = request.args.get('difficulty', default='all')
     limit = request.args.get('limit', default=10, type=int)
@@ -108,14 +139,15 @@ def practice_start():
     )
 
 
-@aptitude_bp.route('/practice/submit-question', methods=['POST'])
+@aptitude_bp.route('/practice/submit-question', methods=['POST'], endpoint='practice_submit_question')
+@aptitude_bp.route('/practice/submit-question', methods=['POST'], endpoint='practice_submit')
 @login_required
 def practice_submit_question():
     """AJAX endpoint to submit a single answer in practice mode."""
     data = request.get_json() or {}
     question_id = data.get('question_id')
-    selected_option = data.get('selected_option')
-    time_taken = data.get('time_taken', 0)
+    selected_option = data.get('selected_option') or data.get('user_answer')
+    time_taken = data.get('time_taken') if data.get('time_taken') is not None else data.get('time_taken_seconds', 0)
 
     if not question_id or not selected_option:
         return jsonify({"error": "Missing parameters"}), 400
@@ -153,9 +185,10 @@ def mock_start():
     """Launches a timed mock test session with server-side timer enforcement."""
     test_type = request.args.get('type') or request.form.get('type') or 'standard'
     company_name = request.args.get('company') or request.form.get('company')
+    num_questions = request.args.get('num_questions', type=int) or request.form.get('num_questions', type=int)
     
     title = f"{company_name.title()} Pattern Mock" if company_name else None
-    session = AptitudeService.start_mock_session(current_user.id, test_type=test_type, custom_title=title)
+    session = AptitudeService.start_mock_session(current_user.id, test_type=test_type, custom_title=title, num_questions=num_questions)
     return redirect(url_for('aptitude.mock_session', session_id=session.id))
 
 
@@ -264,15 +297,16 @@ def daily_challenge_submit():
 
 
 @aptitude_bp.route('/bookmark/toggle', methods=['POST'])
+@aptitude_bp.route('/bookmark/<int:question_id>', methods=['POST'])
 @login_required
-def bookmark_toggle():
+def bookmark_toggle(question_id: Optional[int] = None):
     """AJAX endpoint to toggle question bookmark."""
     data = request.get_json() or {}
-    question_id = data.get('question_id')
-    if not question_id:
+    qid = question_id or data.get('question_id')
+    if not qid:
         return jsonify({"error": "Missing question_id"}), 400
 
-    is_bookmarked = AptitudeService.toggle_bookmark(current_user.id, int(question_id))
+    is_bookmarked = AptitudeService.toggle_bookmark(current_user.id, int(qid))
     return jsonify({"bookmarked": is_bookmarked})
 
 

@@ -5,11 +5,11 @@
 <div class="container-fluid p-0">
     <div class="glass-card p-3 mb-4 border-start border-primary border-4 rounded-3 shadow-sm d-flex justify-content-between align-items-center">
         <div>
-            <h5 class="fw-bold text-white mb-0">Practice Session: {{ topic|title }}</h5>
+            <h5 class="fw-bold text-body mb-0">Practice Session: {{ topic|title }}</h5>
             <small class="text-secondary">Difficulty: <span class="text-capitalize text-info">{{ difficulty }}</span></small>
         </div>
         <div>
-            <span class="badge bg-dark border border-secondary text-light px-3 py-2 fs-6" id="timerBadge">
+            <span class="badge badge-theme-subtle px-3 py-2 fs-6" id="timerBadge">
                 <i class="fa-solid fa-stopwatch text-warning me-1"></i> <span id="timerDisplay">00:00</span>
             </span>
         </div>
@@ -19,7 +19,8 @@
     <div class="row justify-content-center">
         <div class="col-12 col-lg-9 col-xl-8">
             {% for q in questions %}
-            <div class="question-card glass-card p-4 mb-4 border-0 shadow-sm {% if not loop.first %}d-none{% endif %}" id="q_card_{{ loop.index }}" data-qid="{{ q.id }}">
+            {% set q_idx = loop.index %}
+            <div class="question-card glass-card p-4 mb-4 border-0 shadow-sm {% if not loop.first %}d-none{% endif %}" id="q_card_{{ loop.index }}" data-qid="{{ q.id }}" data-index="{{ loop.index }}">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <span class="badge bg-primary bg-opacity-20 text-primary px-3 py-1 font-monospace fs-7">
                         Question {{ loop.index }} of {{ questions|length }}
@@ -33,17 +34,17 @@
                 </div>
 
                 <!-- Question Text -->
-                <h5 class="fw-semibold text-white mb-4 leading-relaxed">{{ q.question_text }}</h5>
+                <h5 class="fw-semibold text-body mb-4 leading-relaxed">{{ q.question_text }}</h5>
 
                 <!-- Options -->
                 <div class="options-group mb-4">
                     {% for opt_key in ['a', 'b', 'c', 'd'] %}
-                    {% set opt_val = attribute(q, 'option_' ~ opt_key) %}
-                    <div class="option-item glass-card p-3 mb-2 border border-secondary border-opacity-25 rounded-3 cursor-pointer hover-border-primary text-white d-flex align-items-center"
+                    {% set opt_val = q|get_field('option_' ~ opt_key) %}
+                    <div class="option-item glass-card p-3 mb-2 border border-secondary border-opacity-25 rounded-3 cursor-pointer hover-border-primary text-body d-flex align-items-center"
                          id="opt_{{ q.id }}_{{ opt_key|upper }}"
-                         onclick="selectOption({{ q.id }}, '{{ opt_key|upper }}')">
+                         onclick="selectOption({{ q.id }}, '{{ opt_key|upper }}', {{ q_idx }})">
                         <span class="badge bg-secondary me-3 px-2.5 py-1.5 font-monospace">{{ opt_key|upper }}</span>
-                        <span>{{ opt_val }}</span>
+                        <span class="fw-medium text-body">{{ opt_val }}</span>
                     </div>
                     {% endfor %}
                 </div>
@@ -54,7 +55,7 @@
                         Submit Answer
                     </button>
                     {% if not loop.last %}
-                    <button type="button" class="btn btn-outline-light px-4 fw-semibold next-btn d-none" id="next_btn_{{ q.id }}" onclick="nextQuestion({{ loop.index }})">
+                    <button type="button" class="btn btn-outline-secondary px-4 fw-semibold next-btn d-none" id="next_btn_{{ q.id }}" onclick="nextQuestion({{ loop.index }})">
                         Next Question <i class="fa-solid fa-arrow-right ms-1"></i>
                     </button>
                     {% else %}
@@ -69,15 +70,15 @@
                     <div class="d-flex align-items-center mb-3">
                         <div class="result-badge-icon fs-3 me-3" id="result_icon_{{ q.id }}"></div>
                         <div>
-                            <h6 class="fw-bold mb-0" id="result_title_{{ q.id }}"></h6>
+                            <h6 class="fw-bold mb-0 text-body" id="result_title_{{ q.id }}"></h6>
                             <small class="text-secondary" id="result_subtitle_{{ q.id }}"></small>
                         </div>
                     </div>
 
                     <!-- Step-by-Step Explanation -->
                     <div class="mb-3">
-                        <strong class="text-white d-block mb-1"><i class="fa-solid fa-list-ol text-info me-1"></i> Step-by-Step Explanation:</strong>
-                        <div class="p-3 bg-dark bg-opacity-75 rounded-3 text-secondary font-monospace fs-7 whitespace-pre-line" id="expl_text_{{ q.id }}"></div>
+                        <strong class="text-body d-block mb-1"><i class="fa-solid fa-list-ol text-info me-1"></i> Step-by-Step Explanation:</strong>
+                        <div class="p-3 badge-theme-subtle rounded-3 text-body font-monospace fs-7 whitespace-pre-line" id="expl_text_{{ q.id }}"></div>
                     </div>
 
                     <!-- Formula & Shortcut -->
@@ -100,118 +101,167 @@
     </div>
 </div>
 
+{% block extra_js %}
 <script>
 let startTime = Date.now();
 let selectedOptions = {};
-let timerInterval;
 
-// Timer update
-function startTimer() {
-    timerInterval = setInterval(() => {
-        let elapsed = Math.floor((Date.now() - startTime) / 1000);
-        let m = String(Math.floor(elapsed / 60)).padStart(2, '0');
-        let s = String(elapsed % 60).padStart(2, '0');
-        document.getElementById('timerDisplay').innerText = `${m}:${s}`;
-    }, 1000);
+// Timer logic
+setInterval(function() {
+    let elapsed = Math.floor((Date.now() - startTime) / 1000);
+    let mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    let secs = String(elapsed % 60).padStart(2, '0');
+    document.getElementById('timerDisplay').textContent = `${mins}:${secs}`;
+}, 1000);
+
+function getQuestionCard(qid, idx) {
+    if (qid) {
+        const byQid = document.querySelector(`.question-card[data-qid="${qid}"]`);
+        if (byQid) return byQid;
+    }
+    if (idx) {
+        const byIdx = document.getElementById(`q_card_${idx}`);
+        if (byIdx) return byIdx;
+    }
+    return document.getElementById(`q_card_${qid}`);
 }
-startTimer();
 
-function selectOption(qid, optKey) {
-    let card = document.getElementById(`q_card_${qid}`);
-    let items = card.querySelectorAll('.option-item');
-    items.forEach(it => it.classList.remove('border-primary', 'bg-primary', 'bg-opacity-20'));
-    
-    let target = document.getElementById(`opt_${qid}_${optKey}`);
-    if (target) {
-        target.classList.add('border-primary', 'bg-primary', 'bg-opacity-20');
-        selectedOptions[qid] = optKey;
+function selectOption(qid, choice, idx) {
+    const card = getQuestionCard(qid, idx);
+    if (!card || card.getAttribute('data-submitted') === 'true') return;
+
+    selectedOptions[qid] = choice;
+    card.querySelectorAll('.option-item').forEach(el => {
+        el.classList.remove('border-primary', 'bg-primary', 'bg-opacity-20');
+    });
+
+    const optEl = document.getElementById(`opt_${qid}_${choice}`);
+    if (optEl) {
+        optEl.classList.add('border-primary', 'bg-primary', 'bg-opacity-20');
     }
 }
 
 function submitAnswer(qid, idx) {
-    let opt = selectedOptions[qid];
-    if (!opt) {
-        alert("Please select an option first!");
+    const choice = selectedOptions[qid];
+    if (!choice) {
+        alert('Please select an option before submitting!');
         return;
     }
 
-    let timeTaken = Math.floor((Date.now() - startTime) / 1000);
+    const timeSpent = Math.max(1, Math.floor((Date.now() - startTime) / 1000));
 
     fetch("{{ url_for('aptitude.practice_submit_question') }}", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token() }}" },
-        body: JSON.stringify({ question_id: qid, selected_option: opt, time_taken: timeTaken })
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token() }}"
+        },
+        body: JSON.stringify({
+            question_id: qid,
+            selected_option: choice,
+            user_answer: choice,
+            time_taken: timeSpent,
+            time_taken_seconds: timeSpent
+        })
     })
-    .then(r => r.json())
+    .then(res => res.json())
     .then(data => {
-        let submitBtn = document.getElementById(`submit_btn_${qid}`);
-        let nextBtn = document.getElementById(`next_btn_${qid}`);
-        let finishBtn = document.getElementById(`finish_btn_${qid}`);
-        let feedback = document.getElementById(`feedback_${qid}`);
-        let icon = document.getElementById(`result_icon_${qid}`);
-        let title = document.getElementById(`result_title_${qid}`);
-        let subtitle = document.getElementById(`result_subtitle_${qid}`);
+        const card = getQuestionCard(qid, idx);
+        if (card) card.setAttribute('data-submitted', 'true');
+        const sBtn = document.getElementById(`submit_btn_${qid}`);
+        if (sBtn) sBtn.classList.add('d-none');
 
-        submitBtn.classList.add('d-none');
+        const nextBtn = document.getElementById(`next_btn_${qid}`);
+        const finishBtn = document.getElementById(`finish_btn_${qid}`);
         if (nextBtn) nextBtn.classList.remove('d-none');
         if (finishBtn) finishBtn.classList.remove('d-none');
 
-        feedback.classList.remove('d-none');
-        document.getElementById(`expl_text_${qid}`).innerText = data.explanation || "";
-
-        if (data.formula) {
-            document.getElementById(`formula_text_${qid}`).innerText = data.formula;
-        } else {
-            document.getElementById(`formula_container_${qid}`).classList.add('d-none');
+        const correctAns = data.correct_answer || data.correct_option;
+        // Highlight correct/incorrect option
+        const correctOpt = document.getElementById(`opt_${qid}_${correctAns}`);
+        if (correctOpt) {
+            correctOpt.classList.remove('bg-primary', 'bg-opacity-20');
+            correctOpt.classList.add('border-success', 'bg-success', 'bg-opacity-20');
         }
 
-        if (data.shortcut) {
-            document.getElementById(`shortcut_text_${qid}`).innerText = data.shortcut;
-        } else {
-            document.getElementById(`shortcut_container_${qid}`).classList.add('d-none');
+        if (!data.is_correct) {
+            const userOpt = document.getElementById(`opt_${qid}_${choice}`);
+            if (userOpt) {
+                userOpt.classList.remove('bg-primary', 'bg-opacity-20');
+                userOpt.classList.add('border-danger', 'bg-danger', 'bg-opacity-20');
+            }
         }
 
-        if (data.is_correct) {
-            feedback.classList.add('border-success', 'bg-success', 'bg-opacity-10');
-            icon.innerHTML = '<i class="fa-solid fa-circle-check text-success"></i>';
-            title.innerText = "Correct Answer!";
-            title.className = "fw-bold text-success mb-0";
-            subtitle.innerText = `Time taken: ${data.actual_time}s (Ideal: ${data.estimated_time}s)`;
-            document.getElementById(`opt_${qid}_${opt}`).classList.add('bg-success', 'border-success');
-        } else {
-            feedback.classList.add('border-danger', 'bg-danger', 'bg-opacity-10');
-            icon.innerHTML = '<i class="fa-solid fa-circle-xmark text-danger"></i>';
-            title.innerText = `Incorrect! Correct Choice is Option ${data.correct_option}`;
-            title.className = "fw-bold text-danger mb-0";
-            subtitle.innerText = `Time taken: ${data.actual_time}s`;
-            document.getElementById(`opt_${qid}_${opt}`).classList.add('bg-danger', 'border-danger');
-            document.getElementById(`opt_${qid}_${data.correct_option}`).classList.add('bg-success', 'border-success');
+        // Show feedback box
+        const fb = document.getElementById(`feedback_${qid}`);
+        if (fb) {
+            fb.classList.remove('d-none');
+            if (data.is_correct) {
+                fb.classList.add('border-success', 'bg-success', 'bg-opacity-10');
+                document.getElementById(`result_icon_${qid}`).innerHTML = '<i class="fa-solid fa-circle-check text-success"></i>';
+                document.getElementById(`result_title_${qid}`).textContent = "Correct Answer!";
+                document.getElementById(`result_subtitle_${qid}`).textContent = "Great job! Keep up the accuracy.";
+            } else {
+                fb.classList.add('border-danger', 'bg-danger', 'bg-opacity-10');
+                document.getElementById(`result_icon_${qid}`).innerHTML = '<i class="fa-solid fa-circle-xmark text-danger"></i>';
+                document.getElementById(`result_title_${qid}`).textContent = "Incorrect Answer";
+                document.getElementById(`result_subtitle_${qid}`).textContent = `Correct option is (${correctAns})`;
+            }
+
+            document.getElementById(`expl_text_${qid}`).textContent = data.explanation || "No explanation provided.";
+
+            if (data.formula) {
+                document.getElementById(`formula_text_${qid}`).textContent = data.formula;
+            } else {
+                const fContainer = document.getElementById(`formula_container_${qid}`);
+                if (fContainer) fContainer.classList.add('d-none');
+            }
+
+            if (data.shortcut) {
+                document.getElementById(`shortcut_text_${qid}`).textContent = data.shortcut;
+            } else {
+                const sContainer = document.getElementById(`shortcut_container_${qid}`);
+                if (sContainer) sContainer.classList.add('d-none');
+            }
         }
     })
-    .catch(err => console.error(err));
+    .catch(err => {
+        console.error("Submission error:", err);
+        alert("Failed to submit answer. Please try again.");
+    });
 }
 
-function nextQuestion(idx) {
-    document.getElementById(`q_card_${idx}`).classList.add('d-none');
-    let nextCard = document.getElementById(`q_card_${idx + 1}`);
-    if (nextCard) nextCard.classList.remove('d-none');
+function nextQuestion(currIdx) {
+    document.getElementById(`q_card_${currIdx}`).classList.add('d-none');
+    const nextCard = document.getElementById(`q_card_${currIdx + 1}`);
+    if (nextCard) {
+        nextCard.classList.remove('d-none');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 }
 
 function toggleBookmark(qid, btn) {
-    fetch("{{ url_for('aptitude.bookmark_toggle') }}", {
+    fetch(`/aptitude/bookmark/${qid}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token() }}" },
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token() }}"
+        },
         body: JSON.stringify({ question_id: qid })
     })
-    .then(r => r.json())
+    .then(res => res.json())
     .then(data => {
-        let icon = btn.querySelector('i');
+        const icon = btn.querySelector('i');
         if (data.bookmarked) {
-            icon.className = "fa-solid fa-bookmark me-1";
+            icon.classList.remove('fa-regular');
+            icon.classList.add('fa-solid');
         } else {
-            icon.className = "fa-regular fa-bookmark me-1";
+            icon.classList.remove('fa-solid');
+            icon.classList.add('fa-regular');
         }
-    });
+    })
+    .catch(err => console.error("Bookmark toggle error:", err));
 }
 </script>
+{% endblock %}
 {% endblock %}

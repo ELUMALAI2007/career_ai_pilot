@@ -5,8 +5,10 @@ Defines base, development, testing, and production environment settings.
 
 import os
 from datetime import timedelta
+from dotenv import load_dotenv
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 
 class Config:
@@ -81,6 +83,7 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     SESSION_COOKIE_SECURE = True
+    
     # TODO: Configure production logging and database pooling parameters
 
 

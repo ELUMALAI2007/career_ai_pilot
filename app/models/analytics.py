@@ -19,6 +19,9 @@ class UserAnalytics(db.Model):
     readiness_percentage = db.Column(db.Float, default=0.0)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
 
 class MetricSnapshot(db.Model):
     """Historical timeline snapshots for Chart.js rendering."""
@@ -29,3 +32,6 @@ class MetricSnapshot(db.Model):
     metric_type = db.Column(db.String(50), nullable=False)
     score_value = db.Column(db.Float, nullable=False)
     recorded_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)

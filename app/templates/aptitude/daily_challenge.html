@@ -6,17 +6,17 @@
     <div class="glass-card p-4 mb-4 border-start border-warning border-4 rounded-3 shadow-sm">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <h2 class="fw-bold text-white mb-1"><i class="fa-solid fa-calendar-check text-warning me-2"></i> Daily 10 Challenge</h2>
+                <h2 class="fw-bold text-body mb-1"><i class="fa-solid fa-calendar-check text-warning me-2"></i> Daily 10 Challenge</h2>
                 <p class="text-secondary mb-0">10 daily adaptive questions across Quant, Logical, and Verbal. Keep your daily streak alive!</p>
             </div>
-            <a href="{{ url_for('aptitude.index') }}" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Aptitude Home</a>
+            <a href="{{ url_for('aptitude.index') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Aptitude Home</a>
         </div>
     </div>
 
     {% if attempt %}
     <div class="glass-card p-4 mb-4 text-center border-0 shadow-sm">
         <i class="fa-solid fa-circle-check text-success display-3 mb-3"></i>
-        <h4 class="fw-bold text-white mb-2">Today's Daily Challenge Completed!</h4>
+        <h4 class="fw-bold text-body mb-2">Today's Daily Challenge Completed!</h4>
         <p class="text-secondary mb-3">You scored <strong class="text-primary">{{ attempt.score }}/10</strong> ({{ attempt.accuracy_percentage }}% Accuracy) on {{ attempt.completed_at.strftime('%b %d, %Y') }}.</p>
         <a href="{{ url_for('aptitude.index') }}" class="btn btn-primary px-4 py-2 fw-semibold">Return to Dashboard</a>
     </div>
@@ -35,14 +35,14 @@
                         <span class="badge bg-secondary bg-opacity-20 text-capitalize">{{ q.difficulty }}</span>
                     </div>
 
-                    <h6 class="fw-semibold text-white mb-3 leading-relaxed">{{ q.question_text }}</h6>
+                    <h6 class="fw-semibold text-body mb-3 leading-relaxed">{{ q.question_text }}</h6>
 
                     <div class="options-list">
                         {% for opt_key in ['a', 'b', 'c', 'd'] %}
-                        {% set opt_val = attribute(q, 'option_' ~ opt_key) %}
-                        <div class="form-check p-3 mb-2 glass-card border border-secondary border-opacity-25 rounded-3 text-white">
+                        {% set opt_val = q|get_field('option_' ~ opt_key) %}
+                        <div class="form-check p-3 mb-2 glass-card border border-secondary border-opacity-25 rounded-3 text-body">
                             <input class="form-check-input ms-0 me-3" type="radio" name="q_{{ q.id }}" id="daily_opt_{{ q.id }}_{{ opt_key }}" value="{{ opt_key|upper }}" required>
-                            <label class="form-check-label w-100 cursor-pointer" for="daily_opt_{{ q.id }}_{{ opt_key }}">
+                            <label class="form-check-label w-100 cursor-pointer text-body" for="daily_opt_{{ q.id }}_{{ opt_key }}">
                                 <strong class="text-warning me-2">{{ opt_key|upper }}.</strong> {{ opt_val }}
                             </label>
                         </div>

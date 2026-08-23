@@ -6,17 +6,17 @@
     <div class="glass-card p-4 mb-4 border-start border-primary border-4 rounded-3 shadow-sm">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <h2 class="fw-bold text-white mb-1"><i class="fa-solid fa-bookmark text-primary me-2"></i> My Saved Bookmarks</h2>
+                <h2 class="fw-bold text-body mb-1"><i class="fa-solid fa-bookmark text-primary me-2"></i> My Saved Bookmarks</h2>
                 <p class="text-secondary mb-0">Review saved placement questions, step-by-step explanations, and shortcuts.</p>
             </div>
-            <a href="{{ url_for('aptitude.index') }}" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Aptitude Home</a>
+            <a href="{{ url_for('aptitude.index') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Aptitude Home</a>
         </div>
     </div>
 
     {% if not questions %}
     <div class="glass-card p-5 text-center border-0 shadow-sm">
         <i class="fa-regular fa-bookmark text-secondary display-3 mb-3"></i>
-        <h5 class="fw-bold text-white mb-2">No Bookmarks Saved Yet</h5>
+        <h5 class="fw-bold text-body mb-2">No Bookmarks Saved Yet</h5>
         <p class="text-secondary mb-3">Save challenging questions during practice to review them here anytime.</p>
         <a href="{{ url_for('aptitude.practice') }}" class="btn btn-primary px-4 py-2 fw-semibold">Start Practice</a>
     </div>
@@ -30,8 +30,8 @@
                         <span class="badge bg-primary bg-opacity-20 text-primary">{{ q.topic }}</span>
                         <span class="badge bg-secondary bg-opacity-20 text-capitalize">{{ q.difficulty }}</span>
                     </div>
-                    <h6 class="fw-bold text-white mb-3 leading-relaxed">{{ q.question_text }}</h6>
-                    <div class="p-3 bg-dark bg-opacity-50 rounded-3 mb-3 border border-secondary border-opacity-25 font-monospace fs-7 text-secondary">
+                    <h6 class="fw-bold text-body mb-3 leading-relaxed">{{ q.question_text }}</h6>
+                    <div class="p-3 badge-theme-subtle rounded-3 mb-3 border border-secondary border-opacity-25 font-monospace fs-7 text-body">
                         <strong class="text-success d-block mb-1">Correct Answer: Option {{ q.correct_option }}</strong>
                         <div>{{ q.explanation }}</div>
                     </div>

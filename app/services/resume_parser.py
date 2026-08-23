@@ -6,7 +6,13 @@ Extracts raw text, structured sections, contact metadata, and calculates complet
 import os
 import re
 from typing import Dict, Any, List, Tuple
-from pypdf import PdfReader
+try:
+    from pypdf import PdfReader
+except ImportError:
+    try:
+        from PyPDF2 import PdfReader
+    except ImportError:
+        PdfReader = None
 from docx import Document
 
 
@@ -49,16 +55,30 @@ class ResumeParser:
         has_images = False
 
         if ext == 'pdf':
+            if PdfReader is None:
+                raise ValueError("PDF parsing module (pypdf/PyPDF2) is missing.")
             try:
                 reader = PdfReader(file_path)
+                if getattr(reader, 'is_encrypted', False):
+                    try:
+                        reader.decrypt('')
+                    except Exception:
+                        raise ValueError("PDF document is password-protected or encrypted. Please remove password protection and try again.")
+                
                 page_count = len(reader.pages)
                 pages_text = []
                 for idx, page in enumerate(reader.pages):
                     txt = page.extract_text() or ""
                     pages_text.append(txt)
-                    if "/XObject" in str(page.get('/Resources', {})):
-                        has_images = True
+                    try:
+                        res = page.get('/Resources')
+                        if res and '/XObject' in str(res):
+                            has_images = True
+                    except Exception:
+                        pass
                 extracted_text = "\n".join(pages_text)
+            except ValueError:
+                raise
             except Exception as e:
                 raise ValueError(f"Failed to parse PDF document. File may be corrupted or encrypted: {str(e)}")
 
@@ -98,16 +118,18 @@ class ResumeParser:
     def parse_contact_info(cls, text: str) -> Dict[str, Any]:
         """Extracts candidate contact details using pattern matching."""
         email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', text)
-        phone_match = re.search(r'(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}', text)
+        phone_match = re.search(r'(\+?\d{1,4}[-.\s]?)?\(?\d{1,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}', text)
         linkedin_match = re.search(r'(https?://)?(www\.)?linkedin\.com/in/[a-zA-Z0-9_-]+/?', text, re.IGNORECASE)
         github_match = re.search(r'(https?://)?(www\.)?github\.com/[a-zA-Z0-9_-]+/?', text, re.IGNORECASE)
         portfolio_match = re.search(r'(https?://)?(www\.)?[a-zA-Z0-9_-]+\.(io|me|dev|com|org)/?', text, re.IGNORECASE)
 
-        # Name extraction heuristic (first non-empty line)
+        # Name extraction heuristic
         lines = [l.strip() for l in text.split('\n') if l.strip()]
-        candidate_name = lines[0] if lines else "Candidate"
-        if len(candidate_name) > 50 or "@" in candidate_name or "Resume" in candidate_name:
-            candidate_name = "Candidate Name"
+        candidate_name = "Candidate Name"
+        for line in lines[:5]:
+            if len(line) <= 50 and not any(k in line.lower() for k in ["curriculum", "resume", "profile", "cv", "@", "http", "page 1"]):
+                candidate_name = line
+                break
 
         return {
             "name": candidate_name,
@@ -147,11 +169,32 @@ class ResumeParser:
 
         extracted_skills = []
         for skill in tech_lexicon:
-            # Word boundary regex search
-            pattern = r'\b' + re.escape(skill) + r'\b'
+            # Character-aware boundary regex search
+            pattern = r'(?<![a-zA-Z0-9#+])' + re.escape(skill) + r'(?![a-zA-Z0-9#+])'
             if re.search(pattern, lowered):
-                # Capitalize nicely
-                extracted_skills.append(skill.title() if len(skill) > 3 else skill.upper())
+                if skill == "c++":
+                    formatted = "C++"
+                elif skill == "c#":
+                    formatted = "C#"
+                elif skill == "c":
+                    formatted = "C"
+                elif skill == "nlp":
+                    formatted = "NLP"
+                elif skill == "sql":
+                    formatted = "SQL"
+                elif skill == "html":
+                    formatted = "HTML"
+                elif skill == "css":
+                    formatted = "CSS"
+                elif skill == "aws":
+                    formatted = "AWS"
+                elif skill == "gcp":
+                    formatted = "GCP"
+                elif skill == "rest api":
+                    formatted = "REST API"
+                else:
+                    formatted = skill.title() if len(skill) > 3 else skill.upper()
+                extracted_skills.append(formatted)
 
         return {
             "sections_found": sections_found,
