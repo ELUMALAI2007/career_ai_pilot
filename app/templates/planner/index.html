@@ -1,26 +1,664 @@
 {% extends "base.html" %}
+
 {% block title %}Daily Study Planner - CareerPilot AI{% endblock %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="fw-bold mb-1"><i class="fa-solid fa-calendar-check text-primary me-2"></i> Daily Study Planner</h2>
-        <p class="text-muted mb-0">Organize your daily preparation checklist and track task completion.</p>
+        <h2 class="fw-bold mb-1">
+            <i class="fa-solid fa-calendar-check text-primary me-2"></i>
+            Daily Study Planner
+        </h2>
+        <p class="text-muted mb-0">
+            Plan your preparation, stay consistent, and track your daily progress.
+        </p>
     </div>
 </div>
 
-<div class="glass-card p-4">
-    <h5 class="fw-bold mb-3">Today's Preparation Checklist</h5>
-    <div class="form-check mb-2">
-        <input class="form-check-input" type="checkbox" id="task1">
-        <label class="form-check-label text-muted" for="task1">Complete 1 Quantitative Aptitude Quiz</label>
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="glass-card p-4 h-100">
+            <h5 class="fw-bold mb-3">
+                <i class="fa-solid fa-calendar-day text-primary me-2"></i>
+                Plan Your Day
+            </h5>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="studyDate" class="form-label">Study date</label>
+                    <input type="date" id="studyDate"
+                           class="form-control bg-dark text-white border-secondary">
+                </div>
+
+                <div class="col-md-6">
+                    <label for="dailyGoal" class="form-label">Daily goal (minutes)</label>
+                    <input type="number" id="dailyGoal" min="15" value="120"
+                           class="form-control bg-dark text-white border-secondary">
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="form-check mb-2">
-        <input class="form-check-input" type="checkbox" id="task2">
-        <label class="form-check-label text-muted" for="task2">Solve 1 Medium DSA Array Challenge</label>
-    </div>
-    <div class="form-check mb-2">
-        <input class="form-check-input" type="checkbox" id="task3">
-        <label class="form-check-label text-muted" for="task3">Conduct 1 AI Mock Interview Session</label>
+
+    <div class="col-lg-4">
+        <div class="glass-card p-4 h-100">
+            <small class="text-muted">Today's motivation</small>
+            <h5 id="motivationText" class="fw-bold mt-2 mb-0">
+                Small daily progress creates big career results.
+            </h5>
+        </div>
     </div>
 </div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="glass-card p-3 text-center h-100">
+            <small class="text-muted">Tasks Completed</small>
+            <h3 id="completedTasks" class="text-primary mb-0">0 / 0</h3>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="glass-card p-3 text-center h-100">
+            <small class="text-muted">Daily Progress</small>
+            <h3 id="progressPercent" class="mb-0">0%</h3>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="glass-card p-3 text-center h-100">
+            <small class="text-muted">Planned Time</small>
+            <h3 id="plannedMinutes" class="mb-0">0 min</h3>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="glass-card p-3 text-center h-100">
+            <small class="text-muted">Completed Time</small>
+            <h3 id="completedMinutes" class="mb-0">0 min</h3>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">Daily Progress</h5>
+        <span id="goalStatus" class="text-muted small">Set your study goal.</span>
+    </div>
+
+    <div class="progress" style="height: 12px;">
+        <div id="progressBar"
+             class="progress-bar bg-primary"
+             role="progressbar"
+             style="width: 0%;"
+             aria-valuenow="0"
+             aria-valuemin="0"
+             aria-valuemax="100"></div>
+    </div>
+</div>
+<div class="glass-card p-4 mb-4 text-center" id="streakCard">
+    <i class="fa-solid fa-fire-flame-curved text-warning fa-2x mb-2"></i>
+    <small class="text-muted d-block">Study Streak</small>
+    <h2 id="streakCount" class="fw-bold text-warning mb-1">0 Days</h2>
+    <p id="streakMessage" class="text-muted mb-0">
+        Complete a task today to start your streak.
+    </p>
+</div>
+
+<style>
+    @keyframes streakCelebration {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.08); box-shadow: 0 0 30px rgba(255, 193, 7, 0.55); }
+    }
+
+    .streak-milestone {
+        animation: streakCelebration 0.8s ease-in-out 3;
+    }
+</style>
+
+<div class="glass-card p-4 mb-4">
+    <h5 class="fw-bold mb-3">
+        <i class="fa-solid fa-bolt text-warning me-2"></i>
+        Quick Add Tasks
+    </h5>
+
+    <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-outline-light quick-task"
+                data-task="Complete an Aptitude Quiz"
+                data-category="Aptitude"
+                data-duration="30">
+            Aptitude Quiz · 30 min
+        </button>
+
+        <button type="button" class="btn btn-outline-light quick-task"
+                data-task="Solve one DSA Coding Challenge"
+                data-category="Coding"
+                data-duration="45">
+            DSA Challenge · 45 min
+        </button>
+
+        <button type="button" class="btn btn-outline-light quick-task"
+                data-task="Practice a Communication Answer"
+                data-category="Communication"
+                data-duration="20">
+            Communication · 20 min
+        </button>
+
+        <button type="button" class="btn btn-outline-light quick-task"
+                data-task="Complete an AI Mock Interview"
+                data-category="Mock Interview"
+                data-duration="30">
+            Mock Interview · 30 min
+        </button>
+
+        <button type="button" class="btn btn-outline-light quick-task"
+                data-task="Update Resume or LinkedIn Profile"
+                data-category="Resume"
+                data-duration="25">
+            Resume Update · 25 min
+        </button>
+    </div>
+</div>
+
+<div class="glass-card p-4 mb-4">
+    <h5 class="fw-bold mb-3">
+        <i class="fa-solid fa-plus text-primary me-2"></i>
+        Add a Study Task
+    </h5>
+
+    <form id="taskForm">
+        <div class="row g-3">
+            <div class="col-lg-5">
+                <label for="taskName" class="form-label">Task name</label>
+                <input type="text" id="taskName"
+                       class="form-control bg-dark text-white border-secondary"
+                       placeholder="Example: Revise Python OOP concepts"
+                       required>
+            </div>
+
+            <div class="col-lg-3">
+                <label for="taskCategory" class="form-label">Category</label>
+                <select id="taskCategory"
+                        class="form-select bg-dark text-white border-secondary">
+                    <option value="Aptitude">Aptitude</option>
+                    <option value="Coding">Coding</option>
+                    <option value="Communication">Communication</option>
+                    <option value="Mock Interview">Mock Interview</option>
+                    <option value="Resume">Resume</option>
+                    <option value="Job Application">Job Application</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="col-lg-2">
+                <label for="taskDuration" class="form-label">Minutes</label>
+                <input type="number" id="taskDuration" min="5" value="30"
+                       class="form-control bg-dark text-white border-secondary"
+                       required>
+            </div>
+
+            <div class="col-lg-2">
+                <label for="taskPriority" class="form-label">Priority</label>
+                <select id="taskPriority"
+                        class="form-select bg-dark text-white border-secondary">
+                    <option value="High">High</option>
+                    <option value="Medium" selected>Medium</option>
+                    <option value="Low">Low</option>
+                </select>
+            </div>
+            <div class="mt-3">
+               <label for="taskNotes" class="form-label">Notes (optional)</label>
+               <textarea id="taskNotes"
+              rows="2"
+              class="form-control bg-dark text-white border-secondary"
+              placeholder="Add an important reminder, resource, or study instruction..."></textarea>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary-custom mt-3">
+            <i class="fa-solid fa-plus me-2"></i>Add Task
+        </button>
+    </form>
+</div>
+
+<div class="glass-card p-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+        <h5 class="fw-bold mb-0">
+            <i class="fa-solid fa-list-check text-primary me-2"></i>
+            Today's Tasks
+        </h5>
+
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-sm btn-primary filter-button"
+                    data-filter="all">
+                All
+            </button>
+
+            <button type="button" class="btn btn-sm btn-outline-light filter-button"
+                    data-filter="active">
+                Active
+            </button>
+
+            <button type="button" class="btn btn-sm btn-outline-light filter-button"
+                    data-filter="completed">
+                Completed
+            </button>
+
+            <button type="button" id="clearCompletedButton"
+                    class="btn btn-sm btn-outline-danger">
+                <i class="fa-solid fa-trash me-1"></i>Clear Completed
+            </button>
+        </div>
+    </div>
+
+    <div id="taskList"></div>
+</div>
+
+<script>
+    const studyDate = document.getElementById("studyDate");
+    const dailyGoal = document.getElementById("dailyGoal");
+    const taskForm = document.getElementById("taskForm");
+    const taskName = document.getElementById("taskName");
+    const taskCategory = document.getElementById("taskCategory");
+    const taskDuration = document.getElementById("taskDuration");
+    const taskPriority = document.getElementById("taskPriority");
+    const taskNotes = document.getElementById("taskNotes");
+    const taskList = document.getElementById("taskList");
+    const clearCompletedButton = document.getElementById("clearCompletedButton");
+
+    const completedTasks = document.getElementById("completedTasks");
+    const progressPercent = document.getElementById("progressPercent");
+    const plannedMinutes = document.getElementById("plannedMinutes");
+    const completedMinutes = document.getElementById("completedMinutes");
+    const progressBar = document.getElementById("progressBar");
+    const goalStatus = document.getElementById("goalStatus");
+    const motivationText = document.getElementById("motivationText");
+    const streakCard = document.getElementById("streakCard");
+    const streakCount = document.getElementById("streakCount");
+    const streakMessage = document.getElementById("streakMessage");
+
+    let tasks = [];
+    let currentFilter = "all";
+    let currentQuote = "";
+    const motivationQuotes = [
+    "Small daily progress creates big career results.",
+    "Focus on progress, not perfection.",
+    "One completed task is better than a perfect plan.",
+    "Your future self will thank you for studying today.",
+    "Consistency is more powerful than motivation.",
+    "Every practice session makes you more confident.",
+    "Learn one skill today that helps your career tomorrow.",
+    "Stay patient, stay focused, and keep improving.",
+    "Great careers are built one focused day at a time.",
+    "Success begins with the task you choose to start now."
+];
+
+function showRandomMotivation() {
+    const randomIndex = Math.floor(Math.random() * motivationQuotes.length);
+    currentQuote = motivationQuotes[randomIndex];
+    motivationText.textContent = currentQuote;
+}
+
+    studyDate.value = new Date().toISOString().split("T")[0];
+
+    function taskStorageKey() {
+        return "careerPilotPlannerTasks_" + studyDate.value;
+    }
+
+    function goalStorageKey() {
+        return "careerPilotPlannerGoal_" + studyDate.value;
+    }
+
+    function savePlanner() {
+        localStorage.setItem(taskStorageKey(), JSON.stringify(tasks));
+        localStorage.setItem(goalStorageKey(), dailyGoal.value);
+    }
+
+    function loadPlanner() {
+        tasks = JSON.parse(localStorage.getItem(taskStorageKey())) || [];
+        dailyGoal.value = localStorage.getItem(goalStorageKey()) || 120;
+        currentFilter = "all";
+        updateFilterButtons();
+        renderTasks();
+    }
+
+    function escapeHtml(value) {
+        const element = document.createElement("div");
+        element.textContent = value;
+        return element.innerHTML;
+    }
+
+    function priorityBadge(priority) {
+        if (priority === "High") {
+            return "bg-danger";
+        }
+
+        if (priority === "Medium") {
+            return "bg-warning text-dark";
+        }
+
+        return "bg-success";
+    }
+
+    function addTask(name, category, duration, priority = "Medium", notes = "") {
+        tasks.push({
+            id: Date.now(),
+            name: name,
+            category: category,
+            duration: Number(duration),
+            priority: priority,
+            notes: notes,
+            completed: false
+        });
+
+        savePlanner();
+        renderTasks();
+    }
+    function getLocalDateString(date) {
+    const timezoneOffset = date.getTimezoneOffset() * 60000;
+    return new Date(date.getTime() - timezoneOffset)
+        .toISOString()
+        .split("T")[0];
+}
+
+function getCompletedStudyDates() {
+    const completedDates = new Set();
+
+    for (let index = 0; index < localStorage.length; index++) {
+        const key = localStorage.key(index);
+
+        if (!key || !key.startsWith("careerPilotPlannerTasks_")) {
+            continue;
+        }
+
+        const savedTasks = JSON.parse(localStorage.getItem(key)) || [];
+        const hasCompletedTask = savedTasks.some(task => task.completed);
+
+        if (hasCompletedTask) {
+            completedDates.add(
+                key.replace("careerPilotPlannerTasks_", "")
+            );
+        }
+    }
+
+    return completedDates;
+}
+
+function updateStreak() {
+    const completedDates = getCompletedStudyDates();
+    const today = getLocalDateString(new Date());
+    const completedToday = completedDates.has(today);
+
+    let checkDate = new Date(today + "T00:00:00");
+
+    /*
+        If today is not completed yet, keep yesterday's streak visible.
+        If yesterday was missed, the streak becomes zero.
+    */
+    if (!completedToday) {
+        checkDate.setDate(checkDate.getDate() - 1);
+    }
+
+    let streak = 0;
+
+    while (completedDates.has(getLocalDateString(checkDate))) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+    }
+
+    streakCount.textContent = streak + (streak === 1 ? " Day" : " Days");
+
+    if (streak === 0) {
+        streakMessage.textContent =
+            "Complete a task today to start your streak.";
+    } else if (!completedToday) {
+        streakMessage.textContent =
+            "Complete a task today to continue your streak.";
+    } else if (streak % 10 === 0) {
+        streakMessage.textContent =
+            "Amazing! You reached a " + streak + "-day study streak!";
+
+        streakCard.classList.remove("streak-milestone");
+        void streakCard.offsetWidth;
+        streakCard.classList.add("streak-milestone");
+    } else {
+        streakMessage.textContent =
+            "Great consistency! Keep your streak going tomorrow.";
+    }
+}
+
+    function updateSummary() {
+    const totalTasks = tasks.length;
+    const doneTasks = tasks.filter(task => task.completed);
+    const completedCount = doneTasks.length;
+
+    const plannedTime = tasks.reduce(
+        (total, task) => total + Number(task.duration),
+        0
+    );
+
+    const completedTime = doneTasks.reduce(
+        (total, task) => total + Number(task.duration),
+        0
+    );
+
+    const percentage = totalTasks
+        ? Math.round((completedCount / totalTasks) * 100)
+        : 0;
+
+    const goal = Number(dailyGoal.value) || 0;
+
+    completedTasks.textContent = completedCount + " / " + totalTasks;
+    progressPercent.textContent = percentage + "%";
+    plannedMinutes.textContent = plannedTime + " min";
+    completedMinutes.textContent = completedTime + " min";
+
+    progressBar.style.width = percentage + "%";
+    progressBar.setAttribute("aria-valuenow", percentage);
+
+    if (totalTasks === 0) {
+        goalStatus.textContent = "Add tasks to plan your study goal.";
+    } else if (plannedTime < goal) {
+        const timeToPlan = goal - plannedTime;
+        goalStatus.textContent =
+            "You have planned " + plannedTime + " of " + goal +
+            " minutes. Add " + timeToPlan + " more minutes of tasks.";
+    } else if (completedTime >= goal) {
+        goalStatus.textContent =
+            "Daily goal achieved! You completed " + completedTime + " minutes.";
+    } else {
+        const remaining = goal - completedTime;
+        goalStatus.textContent =
+            "You have planned enough study time. Complete " +
+            remaining + " more minutes to reach your goal.";
+    }
+
+    motivationText.textContent = currentQuote;
+    updateStreak();
+}
+
+    function renderTasks() {
+        let visibleTasks = tasks;
+
+        if (currentFilter === "active") {
+            visibleTasks = tasks.filter(task => !task.completed);
+        }
+
+        if (currentFilter === "completed") {
+            visibleTasks = tasks.filter(task => task.completed);
+        }
+
+        if (visibleTasks.length === 0) {
+            taskList.innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="fa-solid fa-clipboard-list fa-2x mb-3"></i>
+                    <p class="mb-0">No tasks in this view yet.</p>
+                </div>
+            `;
+        } else {
+            taskList.innerHTML = visibleTasks.map(task => `
+                <div class="border border-secondary rounded p-3 mb-3 d-flex align-items-center gap-3">
+                    <input class="form-check-input task-check flex-shrink-0"
+                           type="checkbox"
+                           data-id="${task.id}"
+                           ${task.completed ? "checked" : ""}>
+
+                    <div class="flex-grow-1">
+                        <div class="${task.completed ? "text-decoration-line-through text-muted" : "fw-semibold"}">
+                            ${escapeHtml(task.name)}
+                        </div>
+
+                        <div class="mt-1">
+                           <span class="badge bg-primary me-1">${escapeHtml(task.category)}</span>
+                           <span class="badge ${priorityBadge(task.priority)} me-1">
+                           ${escapeHtml(task.priority)}
+                          </span>
+                           <span class="text-muted small">
+                           <i class="fa-regular fa-clock me-1"></i>${task.duration} min
+                            </span>
+                        </div>
+
+                         ${task.notes ? `
+                         <div class="text-muted small mt-2">
+                         <i class="fa-solid fa-note-sticky me-1 text-warning"></i>
+                         ${escapeHtml(task.notes)}
+                         </div>
+                        ` : ""}
+                    </div>
+
+                    <button type="button"
+                            class="btn btn-sm btn-outline-light"
+                            data-action="edit"
+                            data-id="${task.id}">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+
+                    <button type="button"
+                            class="btn btn-sm btn-outline-danger"
+                            data-action="delete"
+                            data-id="${task.id}">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            `).join("");
+        }
+
+        updateSummary();
+    }
+
+    function updateFilterButtons() {
+        document.querySelectorAll(".filter-button").forEach(button => {
+            const isActive = button.dataset.filter === currentFilter;
+
+            button.classList.toggle("btn-primary", isActive);
+            button.classList.toggle("btn-outline-light", !isActive);
+        });
+    }
+
+    taskForm.addEventListener("submit", event => {
+        event.preventDefault();
+
+        const name = taskName.value.trim();
+        const duration = Number(taskDuration.value);
+
+        if (!name || duration < 5) {
+            alert("Enter a task name and a duration of at least 5 minutes.");
+            return;
+        }
+
+        addTask(name,taskCategory.value,duration,taskPriority.value,taskNotes.value.trim()
+          );
+        taskForm.reset();
+        taskDuration.value = 30;
+        taskPriority.value = "Medium";
+        taskName.focus();
+    });
+
+    document.querySelectorAll(".quick-task").forEach(button => {
+    button.addEventListener("click", () => {
+        taskName.value = button.dataset.task;
+        taskCategory.value = button.dataset.category;
+        taskDuration.value = button.dataset.duration;
+        taskPriority.value = "Medium";
+
+        taskNotes.focus();
+      });
+    });
+
+    taskList.addEventListener("change", event => {
+        if (!event.target.classList.contains("task-check")) {
+            return;
+        }
+
+        const taskId = Number(event.target.dataset.id);
+        const task = tasks.find(item => item.id === taskId);
+
+        if (task) {
+            task.completed = event.target.checked;
+            savePlanner();
+            renderTasks();
+        }
+    });
+
+    taskList.addEventListener("click", event => {
+        const button = event.target.closest("[data-action]");
+
+        if (!button) {
+            return;
+        }
+
+        const taskId = Number(button.dataset.id);
+        const task = tasks.find(item => item.id === taskId);
+
+        if (!task) {
+            return;
+        }
+
+        if (button.dataset.action === "delete") {
+            tasks = tasks.filter(item => item.id !== taskId);
+        }
+
+        if (button.dataset.action === "edit") {
+            const newName = prompt("Edit task name:", task.name);
+
+            if (newName && newName.trim()) {
+                task.name = newName.trim();
+            }
+        }
+
+        savePlanner();
+        renderTasks();
+    });
+
+    document.querySelectorAll(".filter-button").forEach(button => {
+        button.addEventListener("click", () => {
+            currentFilter = button.dataset.filter;
+            updateFilterButtons();
+            renderTasks();
+        });
+    });
+
+    clearCompletedButton.addEventListener("click", () => {
+        const hasCompletedTasks = tasks.some(task => task.completed);
+
+        if (!hasCompletedTasks) {
+            alert("There are no completed tasks to clear.");
+            return;
+        }
+
+        if (confirm("Remove all completed tasks?")) {
+            tasks = tasks.filter(task => !task.completed);
+            savePlanner();
+            renderTasks();
+        }
+    });
+
+    studyDate.addEventListener("change", loadPlanner);
+
+    dailyGoal.addEventListener("input", () => {
+        savePlanner();
+        updateSummary();
+    });
+  showRandomMotivation();
+  loadPlanner();
+</script>
 {% endblock %}
