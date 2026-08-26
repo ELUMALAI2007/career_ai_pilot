@@ -85,7 +85,7 @@
                     {% if strong_topics %}
                     <div class="d-flex flex-wrap gap-2">
                         {% for t in strong_topics %}
-                        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-25 px-3 py-1.5 fs-7">{{ t }}</span>
+                        <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 px-3 py-1.5 fs-7">{{ t }}</span>
                         {% endfor %}
                     </div>
                     {% else %}
@@ -99,7 +99,7 @@
                     {% if weak_topics %}
                     <div class="d-flex flex-wrap gap-2 mb-3">
                         {% for t in weak_topics %}
-                        <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-25 px-3 py-1.5 fs-7">{{ t }}</span>
+                        <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25 px-3 py-1.5 fs-7">{{ t }}</span>
                         {% endfor %}
                     </div>
                     <a href="{{ url_for('aptitude.practice_start', topic=weak_topics[0], limit=10) }}" class="btn btn-sm btn-outline-danger w-100 fw-semibold">

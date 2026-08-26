@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% block title %}Mock Interview Report - CareerPilot AI{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="glass-card p-4 d-flex flex-wrap align-items-center justify-content-between">
+                <div>
+                    <h2 class="fw-bold text-primary mb-1"><i class="fa-solid fa-square-poll-vertical me-2"></i> Evaluation Scorecard</h2>
+                    <p class="text-secondary mb-0">Review your mock interview results, overall score, strengths, and areas for improvement.</p>
+                </div>
+                <div class="mt-3 mt-md-0">
+                    <a href="{{ url_for('interview.index') }}" class="btn btn-outline-secondary">
+                        <i class="fa-solid fa-arrow-left me-1"></i> Back to Lobby
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overall Score & Dimension Summary Grid -->
+    <div class="row g-4 mb-4">
+        <!-- Radial / Block Score -->
+        <div class="col-md-4">
+            <div class="glass-card p-4 text-center d-flex flex-column align-items-center justify-content-center h-100">
+                <h5 class="fw-bold text-secondary mb-3">Overall Performance</h5>
+                
+                <div class="score-circle-container my-3 position-relative d-flex align-items-center justify-content-center" style="width: 160px; height: 160px;">
+                    <!-- Circular Score SVG visualization -->
+                    <svg width="160" height="160" viewBox="0 0 160 160">
+                        <circle cx="80" cy="80" r="70" stroke="rgba(255, 255, 255, 0.08)" stroke-width="12" fill="transparent"/>
+                        <circle cx="80" cy="80" r="70" stroke="#4f46e5" stroke-width="12" fill="transparent"
+                                stroke-dasharray="440" stroke-dashoffset="{{ 440 - (440 * (session.overall_score or 50) / 100) }}"
+                                stroke-linecap="round" transform="rotate(-90 80 80)"/>
+                    </svg>
+                    <div class="position-absolute d-flex flex-column align-items-center justify-content-center">
+                        <span class="h1 fw-bold text-white mb-0">{{ session.overall_score | int }}</span>
+                        <span class="text-secondary small">out of 100</span>
+                    </div>
+                </div>
+
+                <div class="badge {% if session.overall_score >= 80 %}bg-success{% elif session.overall_score >= 60 %}bg-warning text-dark{% else %}bg-danger{% endif %} px-3 py-2 mt-2">
+                    {% if session.overall_score >= 80 %}Excellent{% elif session.overall_score >= 60 %}Satisfactory{% else %}Needs Practice{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Scores Breakdown -->
+        <div class="col-md-8">
+            <div class="glass-card p-4 h-100">
+                <h5 class="fw-bold mb-4"><i class="fa-solid fa-chart-bar text-primary me-2"></i> Dimension Breakdown</h5>
+                
+                {% if feedback.dimension_scores %}
+                    <div class="row g-3">
+                        {% for dim, score in feedback.dimension_scores.items() %}
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small fw-semibold text-secondary">{{ dim }}</span>
+                                <span class="small fw-bold text-white">{{ score | int }}%</span>
+                            </div>
+                            <div class="progress bg-dark" style="height: 8px;">
+                                <div class="progress-bar {% if score >= 80 %}bg-success{% elif score >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                     role="progressbar" style="width: {{ score }}%;"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="fa-solid fa-circle-info fa-2x mb-2"></i>
+                        <div>Detailed dimension scores are not available for this session.</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Strengths and Areas for Improvement -->
+    <div class="row g-4 mb-4">
+        <!-- Strengths -->
+        <div class="col-md-6">
+            <div class="glass-card p-4 border-success-subtle h-100">
+                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-circle-check me-2"></i> Key Strengths</h5>
+                {% if feedback.strengths %}
+                    <ul class="list-group list-group-flush bg-transparent">
+                        {% for str in feedback.strengths %}
+                        <li class="list-group-item bg-transparent text-secondary border-0 ps-0 d-flex align-items-start gap-2">
+                            <span class="text-success"><i class="fa-solid fa-circle-plus mt-1"></i></span>
+                            <div>{{ str }}</div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted">No specific strengths generated.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Areas for Improvement -->
+        <div class="col-md-6">
+            <div class="glass-card p-4 border-warning-subtle h-100">
+                <h5 class="fw-bold text-warning mb-3"><i class="fa-solid fa-triangle-exclamation me-2"></i> Areas for Improvement</h5>
+                {% if feedback.areas_for_improvement %}
+                    <ul class="list-group list-group-flush bg-transparent">
+                        {% for area in feedback.areas_for_improvement %}
+                        <li class="list-group-item bg-transparent text-secondary border-0 ps-0 d-flex align-items-start gap-2">
+                            <span class="text-warning"><i class="fa-solid fa-circle-minus mt-1"></i></span>
+                            <div>{{ area }}</div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted">No improvement feedback generated.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommended Actions Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="glass-card p-4 border-primary-subtle">
+                <h5 class="fw-bold text-primary mb-3"><i class="fa-solid fa-lightbulb me-2"></i> Recommended Actions</h5>
+                {% if feedback.recommended_improvements %}
+                    <div class="row g-2">
+                        {% for rec in feedback.recommended_improvements %}
+                        <div class="col-md-4">
+                            <div class="p-3 bg-dark-subtle rounded border border-secondary-subtle h-100">
+                                <span class="badge bg-indigo mb-2">Tip {{ loop.index }}</span>
+                                <p class="text-secondary small mb-0">{{ rec }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No specific actionable items compiled.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Question-by-Question Review Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="glass-card p-4">
+                <h4 class="fw-bold mb-4"><i class="fa-solid fa-rectangle-list text-primary me-2"></i> Question-by-Question Review</h4>
+                
+                <div class="accordion accordion-flush" id="reviewAccordion">
+                    {% for turn in turns %}
+                    {% set turn_feedback = turn.get_evaluation() %}
+                    {% set turn_scores = turn.get_scores() %}
+                    <div class="accordion-item bg-transparent border-bottom border-secondary-subtle">
+                        <h2 class="accordion-header" id="heading-{{ turn.id }}">
+                            <button class="accordion-button collapsed bg-transparent text-white fw-bold py-3 ps-0" type="button" 
+                                    data-bs-toggle="collapse" data-bs-target="#collapse-{{ turn.id }}" aria-expanded="false" 
+                                    aria-controls="collapse-{{ turn.id }}">
+                                <div class="d-flex w-100 justify-content-between align-items-center pe-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-secondary">Q{{ turn.sequence_number }}</span>
+                                        <span class="text-truncate d-inline-block" style="max-width: 500px;">{{ turn.question | replace('*', '') }}</span>
+                                    </div>
+                                    <span class="badge bg-indigo-subtle text-indigo">{{ turn.question_type }}</span>
+                                </div>
+                            </button>
+                        </h2>
+                        
+                        <div id="collapse-{{ turn.id }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ turn.id }}" 
+                             data-bs-parent="#reviewAccordion">
+                            <div class="accordion-body bg-transparent text-secondary py-3 px-0">
+                                <!-- Detailed Q & A text -->
+                                <div class="mb-3">
+                                    <div class="fw-bold text-white mb-1"><i class="fa-solid fa-circle-question text-primary me-1"></i> Question:</div>
+                                    <div class="p-3 bg-dark-subtle rounded border border-secondary-subtle text-white">{{ turn.question | replace('*', '') }}</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="fw-bold text-white mb-1"><i class="fa-solid fa-user me-1"></i> Your Answer:</div>
+                                    <div class="p-3 bg-dark-subtle rounded border border-secondary-subtle text-white italic">
+                                        {{ turn.candidate_answer or 'No answer provided.' }}
+                                    </div>
+                                </div>
+
+                                <hr class="border-secondary-subtle my-3">
+
+                                <!-- Turn-level Scores -->
+                                {% if turn_scores %}
+                                <div class="mb-3">
+                                    <div class="fw-bold text-white mb-2"><i class="fa-solid fa-award text-success me-1"></i> Turn Scores (0-10 Scale):</div>
+                                    <div class="row g-2">
+                                        {% for s_dim, s_val in turn_scores.items() %}
+                                        <div class="col-md-3 col-sm-6">
+                                            <div class="p-2 bg-dark-subtle rounded border border-secondary-subtle text-center">
+                                                <div class="small text-muted">{{ s_dim }}</div>
+                                                <div class="fs-5 fw-bold text-success">{{ s_val | int }}/10</div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <!-- Evaluation Feedback -->
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="p-3 bg-success-subtle rounded border border-success h-100">
+                                            <div class="fw-bold text-success mb-1"><i class="fa-solid fa-thumbs-up me-1"></i> What went well:</div>
+                                            <p class="small text-secondary mb-0">{{ turn_feedback.what_went_well or 'Parsed.' }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="p-3 bg-warning-subtle rounded border border-warning h-100">
+                                            <div class="fw-bold text-warning mb-1"><i class="fa-solid fa-arrow-trend-up me-1"></i> Areas for improvement:</div>
+                                            <p class="small text-secondary mb-0">{{ turn_feedback.areas_for_improvement or 'N/A' }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-indigo-subtle {
+        background-color: rgba(99, 102, 241, 0.15);
+    }
+    .text-indigo {
+        color: #818cf8;
+    }
+    .bg-indigo {
+        background-color: #4f46e5;
+        color: white;
+    }
+    .accordion-button:not(.collapsed) {
+        background-color: transparent !important;
+        box-shadow: none !important;
+    }
+</style>
+{% endblock %}

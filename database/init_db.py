@@ -20,9 +20,11 @@ app = create_app(DevelopmentConfig)
 def apply_schema_migrations():
     """Safely adds new columns to existing tables without dropping existing user data."""
     inspector = inspect(db.engine)
-    if 'users' in inspector.get_table_names():
-        columns = [c['name'] for c in inspector.get_columns('users')]
-        with db.engine.connect() as conn:
+    table_names = inspector.get_table_names()
+    
+    with db.engine.connect() as conn:
+        if 'users' in table_names:
+            columns = [c['name'] for c in inspector.get_columns('users')]
             if 'google_id' not in columns:
                 print("Adding google_id column to users table...")
                 conn.execute(text("ALTER TABLE users ADD COLUMN google_id VARCHAR(100)"))
@@ -35,7 +37,23 @@ def apply_schema_migrations():
             if 'status' not in columns:
                 print("Adding status column to users table...")
                 conn.execute(text("ALTER TABLE users ADD COLUMN status VARCHAR(20) DEFAULT 'approved'"))
-            conn.commit()
+
+        if 'coding_problems' in table_names:
+            coding_cols = [c['name'] for c in inspector.get_columns('coding_problems')]
+            if 'topic' not in coding_cols:
+                print("Re-creating coding_problems table with updated schema...")
+                conn.execute(text("DROP TABLE IF EXISTS coding_submissions"))
+                conn.execute(text("DROP TABLE IF EXISTS coding_bookmarks"))
+                conn.execute(text("DROP TABLE IF EXISTS coding_daily_challenges"))
+                conn.execute(text("DROP TABLE IF EXISTS coding_problems"))
+
+        if 'coding_progress' in table_names:
+            progress_cols = [c['name'] for c in inspector.get_columns('coding_progress')]
+            if 'proctor_flags' not in progress_cols:
+                print("Adding proctor_flags column to coding_progress table...")
+                conn.execute(text("ALTER TABLE coding_progress ADD COLUMN proctor_flags INTEGER DEFAULT 0"))
+
+        conn.commit()
 
 
 def init_database():
@@ -73,7 +91,12 @@ def init_database():
             admin_user.set_password('AdminSecure123!')
             db.session.add(admin_user)
             db.session.commit()
-            print("Admin account seeded: admin@careerpilot.ai / AdminSecure123!")
+        # Seed Coding & DSA Challenges
+        try:
+            from database.seed_coding import seed_coding_database
+            seed_coding_database()
+        except Exception as e:
+            print(f"Notice during coding seeding: {e}")
 
         print("Database initialization completed successfully.")
 

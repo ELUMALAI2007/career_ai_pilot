@@ -21,14 +21,14 @@
             {% for q in questions %}
             <div class="question-card glass-card p-4 mb-4 border-0 shadow-sm {% if not loop.first %}d-none{% endif %}" id="q_card_{{ loop.index }}" data-qid="{{ q.id }}">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="badge bg-primary bg-opacity-20 text-primary px-3 py-1 font-monospace fs-7">
+                    <span class="badge bg-primary bg-opacity-25 text-primary px-3 py-1 font-monospace fs-7">
                         Question {{ loop.index }} of {{ questions|length }}
                     </span>
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-sm btn-outline-warning bookmark-btn" data-qid="{{ q.id }}" onclick="toggleBookmark({{ q.id }}, this)">
+                        <button type="button" class="btn btn-sm btn-outline-warning bookmark-btn" data-qid="{{ q.id }}" onclick="toggleBookmark(parseInt(this.dataset.qid), this)">
                             <i class="fa-{% if q.id in user_bookmarks %}solid{% else %}regular{% endif %} fa-bookmark me-1"></i> Bookmark
                         </button>
-                        <span class="badge bg-secondary bg-opacity-20 text-capitalize">{{ q.difficulty }}</span>
+                        <span class="badge bg-secondary bg-opacity-25 text-capitalize">{{ q.difficulty }}</span>
                     </div>
                 </div>
 
@@ -119,11 +119,11 @@ startTimer();
 function selectOption(qid, optKey) {
     let card = document.getElementById(`q_card_${qid}`);
     let items = card.querySelectorAll('.option-item');
-    items.forEach(it => it.classList.remove('border-primary', 'bg-primary', 'bg-opacity-20'));
+    items.forEach(it => it.classList.remove('border-primary', 'bg-primary', 'bg-opacity-25'));
     
     let target = document.getElementById(`opt_${qid}_${optKey}`);
     if (target) {
-        target.classList.add('border-primary', 'bg-primary', 'bg-opacity-20');
+        target.classList.add('border-primary', 'bg-primary', 'bg-opacity-25');
         selectedOptions[qid] = optKey;
     }
 }

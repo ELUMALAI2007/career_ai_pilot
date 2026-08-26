@@ -13,10 +13,13 @@ from app.models.aptitude import (
     AptitudeTopicMastery, AptitudeTestSession, AptitudeTestResult,
     AptitudeDailyChallenge, AptitudeDailyChallengeAttempt, AptitudeStreak
 )
-from app.models.coding import CodingProblem, CodingSubmission
+from app.models.coding import (
+    CodingProblem, CodingSubmission, CodingBookmark,
+    CodingProgress, DailyChallenge, CodingBadge, UserBadge
+)
 from app.models.communication import CommunicationAssessment
 from app.models.company_prep import CompanyProfile, PlacementPattern, InterviewExperience
-from app.models.interview import MockInterview, InterviewQuestion, InterviewFeedback
+from app.models.interview import InterviewSession, InterviewTurn
 from app.models.job_eligibility import EligibilityCriteria, JobRequirement
 from app.models.learning_roadmap import Roadmap, RoadmapMilestone
 from app.models.notification import Notification
@@ -34,10 +37,11 @@ __all__ = [
     'AptitudeQuestionAnswer', 'AptitudeBookmark', 'AptitudeProgress',
     'AptitudeTopicMastery', 'AptitudeTestSession', 'AptitudeTestResult',
     'AptitudeDailyChallenge', 'AptitudeDailyChallengeAttempt', 'AptitudeStreak',
-    'CodingProblem', 'CodingSubmission',
+    'CodingProblem', 'CodingSubmission', 'CodingBookmark',
+    'CodingProgress', 'DailyChallenge', 'CodingBadge', 'UserBadge',
     'CommunicationAssessment',
     'CompanyProfile', 'PlacementPattern', 'InterviewExperience',
-    'MockInterview', 'InterviewQuestion', 'InterviewFeedback',
+    'InterviewSession', 'InterviewTurn',
     'EligibilityCriteria', 'JobRequirement',
     'Roadmap', 'RoadmapMilestone',
     'Notification',

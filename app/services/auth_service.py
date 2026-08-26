@@ -76,17 +76,18 @@ class AuthService:
     def notify_admin_new_request(user: User):
         """Sends an administrative alert email when a new Google user registers."""
         admin_email = current_app.config.get('ADMIN_EMAIL', 'admin@careerpilot.ai')
-        review_url = url_for('admin.requests', _external=True)
+        try:
+            review_url = url_for('admin.users', _external=True)
+        except Exception:
+            review_url = f"{current_app.config.get('APP_URL', 'http://127.0.0.1:5000')}/admin/users"
         
-        subject = "New Career Prospects Access Request"
+        subject = f"Action Required: New User Request - {user.full_name}"
         body = (
-            f"Subject: {subject}\n\n"
-            f"New user wants access to Career Prospects.\n\n"
+            f"A new candidate has requested access via Google Sign-In:\n\n"
             f"Name: {user.full_name}\n"
             f"Email: {user.email}\n"
-            f"Authentication: Google OAuth\n"
-            f"Registration Time: {user.created_at.strftime('%d %B %Y, %I:%M %p')}\n"
-            f"Status: {user.status.upper()}\n\n"
+            f"Auth Provider: {user.auth_provider}\n"
+            f"Status: PENDING APPROVAL\n\n"
             f"Review request at: {review_url}\n"
         )
         
@@ -105,7 +106,10 @@ class AuthService:
     @staticmethod
     def notify_user_status_update(user: User, action: str):
         """Notifies user via email when their account request is approved or rejected."""
-        sign_in_url = url_for('auth.login', _external=True)
+        try:
+            sign_in_url = url_for('auth.login', _external=True)
+        except Exception:
+            sign_in_url = f"{current_app.config.get('APP_URL', 'http://127.0.0.1:5000')}/auth/login"
         
         if action == 'approved':
             subject = "Your Career Prospects Access Has Been Approved"

@@ -29,10 +29,10 @@
                 {% for q in questions %}
                 <div class="glass-card p-4 mb-4 border-0 shadow-sm">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="badge bg-warning bg-opacity-20 text-warning px-3 py-1 font-monospace">
+                        <span class="badge bg-warning bg-opacity-25 text-warning px-3 py-1 font-monospace">
                             Daily Question {{ loop.index }} of 10
                         </span>
-                        <span class="badge bg-secondary bg-opacity-20 text-capitalize">{{ q.difficulty }}</span>
+                        <span class="badge bg-secondary bg-opacity-25 text-capitalize">{{ q.difficulty }}</span>
                     </div>
 
                     <h6 class="fw-semibold text-white mb-3 leading-relaxed">{{ q.question_text }}</h6>

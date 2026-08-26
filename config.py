@@ -50,6 +50,10 @@ class Config:
     GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
     GEMINI_MODEL_NAME = os.environ.get('GEMINI_MODEL_NAME', 'gemini-1.5-flash')
 
+    # OpenRouter configuration
+    OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')
+    OPENROUTER_MODEL = os.environ.get('OPENROUTER_MODEL', 'google/gemma-4-31b-it:free')
+
     # Google OAuth 2.0 Credentials & Base URL
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
     GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
@@ -72,6 +76,7 @@ class TestingConfig(Config):
     """Testing Environment Configuration."""
     DEBUG = False
     TESTING = True
+    SERVER_NAME = 'localhost'
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
     WTF_CSRF_ENABLED = False
 

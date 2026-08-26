@@ -1,0 +1,598 @@
+{% extends "base.html" %}
+{% block title %}Mock Interview Room - CareerPilot AI{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    <!-- Header panel with details and progress -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="glass-card p-3 d-flex flex-wrap align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="badge bg-primary px-3 py-2 rounded-pill"><i class="fa-solid fa-headset me-1"></i> AI Interview Room</span>
+                    <h5 class="fw-bold mb-0 text-white" id="session-info-title">{{ session.role }} Mock Session</h5>
+                </div>
+                <div class="d-flex align-items-center gap-3 mt-2 mt-md-0">
+                    <div class="text-secondary small">
+                        <i class="fa-solid fa-building me-1"></i> <strong>{{ session.company }}</strong> | 
+                        <i class="fa-solid fa-layer-group me-1"></i> <strong>{{ session.difficulty }}</strong> | 
+                        <i class="fa-solid fa-tags me-1"></i> <strong>{{ session.interview_type }}</strong>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger fw-semibold" id="end-interview-btn">
+                        <i class="fa-solid fa-circle-stop me-1"></i> End Interview
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Simulator Grid -->
+    <div class="row g-3">
+        <!-- AI Card & Optional Webcam Column -->
+        <div class="col-lg-4">
+            <div class="d-flex flex-column gap-3">
+                <!-- AI Profile / Avatar Card -->
+                <div class="glass-card p-4 text-center position-relative overflow-hidden" id="interviewer-card">
+                    <div class="avatar-wave-container mb-3 position-relative mx-auto" style="width: 120px; height: 120px;">
+                        <!-- Avatar placeholder with pulse visualizer -->
+                        <div class="avatar-pulse-ring" id="pulse-ring"></div>
+                        <div class="avatar-bg d-flex align-items-center justify-content-center text-primary">
+                            <i class="fa-solid fa-robot fa-3x" id="avatar-icon"></i>
+                        </div>
+                    </div>
+                    <h5 class="fw-bold mb-1" id="avatar-name">Elena</h5>
+                    <p class="text-secondary small mb-3">AI Interview Panelist</p>
+                    
+                    <!-- Waveform Visualizer -->
+                    <div class="waveform-box mb-2" id="waveform">
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                    </div>
+                    <span class="badge bg-dark-subtle text-muted" id="ai-status">Ready</span>
+                </div>
+
+                <!-- Webcam Card -->
+                <div class="glass-card p-3 text-center">
+                    <div class="webcam-preview bg-black rounded mb-3 position-relative overflow-hidden" style="height: 200px;">
+                        <video id="webcam-video" autoplay playsinline muted class="w-100 h-100 object-fit-cover d-none"></video>
+                        <div id="webcam-fallback" class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+                            <i class="fa-solid fa-video-slash fa-2x mb-2"></i>
+                            <div class="small">Camera is off</div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button class="btn btn-sm btn-outline-secondary" id="toggle-camera-btn">
+                            <i class="fa-solid fa-video me-1"></i> Start Camera
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" id="toggle-mic-permission-btn">
+                            <i class="fa-solid fa-microphone me-1"></i> Mic Check
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question and Conversation Stream Column -->
+        <div class="col-lg-8">
+            <div class="glass-card p-4 d-flex flex-column justify-content-between h-100" style="min-height: 520px;">
+                <!-- Discussion & Timeline Section -->
+                <div>
+                    <!-- Active Question Box -->
+                    <div class="active-question-card p-3 rounded mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-indigo text-indigo-light" id="active-q-type">Question Type: Loading...</span>
+                            <span class="text-secondary small fw-bold" id="progress-indicator">Question Loading...</span>
+                        </div>
+                        <h4 class="fw-bold mb-3 text-white" id="active-question-text">Loading question...</h4>
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="btn btn-sm btn-indigo" id="tts-play-btn"><i class="fa-solid fa-volume-high me-1"></i> Listen</button>
+                            <button class="btn btn-sm btn-outline-secondary" id="tts-stop-btn"><i class="fa-solid fa-stop"></i></button>
+                            <button class="btn btn-sm btn-outline-secondary" id="tts-mute-btn"><i class="fa-solid fa-volume-xmark"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Conversation Timeline -->
+                    <div class="timeline-container mb-4" id="timeline">
+                        <!-- Loaded dynamic turn-by-turn items -->
+                    </div>
+                </div>
+
+                <!-- Input Textarea & Submit Controls -->
+                <div>
+                    <div class="progress mb-3" style="height: 6px;">
+                        <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" id="session-progress-bar" role="progressbar" style="width: 0%;"></div>
+                    </div>
+
+                    <div class="mb-3 position-relative">
+                        <textarea class="form-control bg-dark-subtle border-secondary-subtle" rows="4" id="answer-textarea" placeholder="Type your response here or click 'Speak' to transcribe your voice..."></textarea>
+                        <div class="position-absolute bottom-0 start-0 m-2 d-none" id="transcribing-indicator">
+                            <span class="spinner-grow spinner-grow-sm text-primary" role="status"></span>
+                            <span class="small text-primary fw-bold ms-1">Listening...</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-primary fw-semibold" id="stt-btn">
+                                <i class="fa-solid fa-microphone me-2"></i> Speak
+                            </button>
+                            <button class="btn btn-outline-secondary d-none" id="stt-stop-btn">
+                                <i class="fa-solid fa-microphone-slash me-2"></i> Stop Transcribing
+                            </button>
+                        </div>
+                        <button class="btn btn-success px-4 fw-bold" id="submit-answer-btn">
+                            Submit Answer <i class="fa-solid fa-paper-plane ms-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Premium simulation elements styles */
+    .avatar-bg {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background-color: rgba(99, 102, 241, 0.1);
+        border: 2px solid rgba(99, 102, 241, 0.3);
+        transition: all 0.3s ease;
+    }
+    .avatar-pulse-ring {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 4px solid rgba(99, 102, 241, 0.4);
+        top: 0;
+        left: 0;
+        animation: pulseRing 2s infinite ease-out;
+        opacity: 0;
+    }
+    @keyframes pulseRing {
+        0% { transform: scale(0.95); opacity: 1; }
+        100% { transform: scale(1.3); opacity: 0; }
+    }
+    .waveform-box {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        height: 30px;
+    }
+    .waveform-box .bar {
+        width: 4px;
+        background-color: #4f46e5;
+        border-radius: 2px;
+        transition: height 0.15s ease;
+        height: 4px;
+    }
+    .waveform-box.active .bar {
+        animation: wave 1.2s infinite ease-in-out;
+    }
+    .waveform-box.active .bar:nth-child(2) { animation-delay: 0.15s; }
+    .waveform-box.active .bar:nth-child(3) { animation-delay: 0.3s; }
+    .waveform-box.active .bar:nth-child(4) { animation-delay: 0.45s; }
+    .waveform-box.active .bar:nth-child(5) { animation-delay: 0.6s; }
+    .waveform-box.active .bar:nth-child(6) { animation-delay: 0.75s; }
+    .waveform-box.active .bar:nth-child(7) { animation-delay: 0.9s; }
+    @keyframes wave {
+        0%, 100% { height: 4px; }
+        50% { height: 26px; }
+    }
+    .active-question-card {
+        background-color: rgba(99, 102, 241, 0.12);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+    .bg-indigo {
+        background-color: rgba(99, 102, 241, 0.15);
+    }
+    .text-indigo-light {
+        color: #a5b4fc;
+    }
+    .btn-indigo {
+        background-color: #4f46e5;
+        color: white;
+        border: none;
+    }
+    .btn-indigo:hover {
+        background-color: #4338ca;
+    }
+    .timeline-container {
+        max-height: 220px;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+    .bubble {
+        padding: 10px 14px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        max-width: 85%;
+        font-size: 0.95rem;
+    }
+    .bubble.ai {
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-top-left-radius: 2px;
+        align-self: flex-start;
+    }
+    .bubble.candidate {
+        background-color: rgba(99, 102, 241, 0.18);
+        border: 1px solid rgba(99, 102, 241, 0.25);
+        border-top-right-radius: 2px;
+        align-self: flex-end;
+    }
+</style>
+
+<div id="session-data" data-session-id="{{ session.id }}" hidden></div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const sessionId = parseInt(document.getElementById("session-data").dataset.sessionId, 10);
+        const csrfToken = "{{ csrf_token() }}";
+
+        // DOM elements
+        const activeQuestionText = document.getElementById("active-question-text");
+        const activeQuestionType = document.getElementById("active-q-type");
+        const progressIndicator = document.getElementById("progress-indicator");
+        const sessionProgressBar = document.getElementById("session-progress-bar");
+        const timeline = document.getElementById("timeline");
+        const answerTextarea = document.getElementById("answer-textarea");
+        const transcribingIndicator = document.getElementById("transcribing-indicator");
+        
+        const submitBtn = document.getElementById("submit-answer-btn");
+        const endBtn = document.getElementById("end-interview-btn");
+        const sttBtn = document.getElementById("stt-btn");
+        const sttStopBtn = document.getElementById("stt-stop-btn");
+        
+        const ttsPlayBtn = document.getElementById("tts-play-btn");
+        const ttsStopBtn = document.getElementById("tts-stop-btn");
+        const ttsMuteBtn = document.getElementById("tts-mute-btn");
+        
+        const toggleCameraBtn = document.getElementById("toggle-camera-btn");
+        const webcamVideo = document.getElementById("webcam-video");
+        const webcamFallback = document.getElementById("webcam-fallback");
+        
+        const aiStatus = document.getElementById("ai-status");
+        const pulseRing = document.getElementById("pulse-ring");
+        const waveform = document.getElementById("waveform");
+
+        let activeQuestion = "";
+        let isMuted = false;
+        let webcamStream = null;
+        let recognition = null;
+        let currentUtterance = null;
+
+        // Initialize Web Speech APIs
+        // TTS Synthesis
+        const synth = window.speechSynthesis;
+
+        function speakQuestion(text) {
+            if (isMuted || !synth) return;
+            synth.cancel(); // cancel any active speaking
+
+            // Clean text from symbols
+            const cleanText = text.replace(/[*#]/g, '');
+
+            currentUtterance = new SpeechSynthesisUtterance(cleanText);
+            
+            // Try to find a nice English voice
+            const voices = synth.getVoices();
+            const preferredVoice = voices.find(voice => voice.lang.includes('en-US') || voice.lang.includes('en-GB'));
+            if (preferredVoice) {
+                currentUtterance.voice = preferredVoice;
+            }
+
+            currentUtterance.onstart = function() {
+                aiStatus.innerText = "Speaking";
+                pulseRing.style.display = "block";
+                waveform.classList.add("active");
+            };
+
+            currentUtterance.onend = function() {
+                aiStatus.innerText = "Listening";
+                pulseRing.style.display = "none";
+                waveform.classList.remove("active");
+            };
+
+            currentUtterance.onerror = function() {
+                aiStatus.innerText = "Ready";
+                pulseRing.style.display = "none";
+                waveform.classList.remove("active");
+            };
+
+            synth.speak(currentUtterance);
+        }
+
+        // Trigger loading voices (some browsers delay voice load)
+        if (synth) {
+            synth.getVoices();
+        }
+
+        // STT Speech Recognition
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            let baseText = '';
+            recognition.onstart = function() {
+                baseText = answerTextarea.value;
+                transcribingIndicator.classList.remove("d-none");
+                sttBtn.classList.add("d-none");
+                sttStopBtn.classList.remove("d-none");
+            };
+
+            recognition.onresult = function(event) {
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        baseText += (baseText && !baseText.endsWith(' ') ? ' ' : '') + event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+                answerTextarea.value = baseText + (interimTranscript ? (baseText ? ' ' : '') + interimTranscript : '');
+            };
+
+            recognition.onend = function() {
+                transcribingIndicator.classList.add("d-none");
+                sttBtn.classList.remove("d-none");
+                sttStopBtn.classList.add("d-none");
+            };
+
+            recognition.onerror = function(event) {
+                console.error("Speech Recognition Error:", event.error);
+                if (event.error === 'not-allowed') {
+                    alert("Microphone access denied! Please click the camera/mic icon in the browser address bar and grant access to this site.");
+                } else if (event.error === 'service-not-allowed') {
+                    alert("Speech recognition is blocked or not allowed on this browser.");
+                } else {
+                    alert("Speech Recognition Error: " + event.error + ". Make sure you are using Google Chrome or Microsoft Edge on localhost/HTTPS.");
+                }
+                recognition.stop();
+            };
+        } else {
+            sttBtn.disabled = true;
+            sttBtn.title = "Browser Speech Recognition not supported in this browser.";
+        }
+
+        // Webcam Stream
+        async function startWebcam() {
+            try {
+                webcamStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                webcamVideo.srcObject = webcamStream;
+                webcamVideo.classList.remove("d-none");
+                webcamFallback.classList.add("d-none");
+                toggleCameraBtn.innerHTML = '<i class="fa-solid fa-video-slash me-1"></i> Stop Camera';
+                toggleCameraBtn.classList.replace("btn-outline-secondary", "btn-danger");
+            } catch (err) {
+                console.error("Webcam Access Error:", err);
+                alert("Could not access camera. Please check browser permissions.");
+            }
+        }
+
+        function stopWebcam() {
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcamStream = null;
+            }
+            webcamVideo.srcObject = null;
+            webcamVideo.classList.add("d-none");
+            webcamFallback.classList.remove("d-none");
+            toggleCameraBtn.innerHTML = '<i class="fa-solid fa-video me-1"></i> Start Camera';
+            toggleCameraBtn.classList.replace("btn-danger", "btn-outline-secondary");
+        }
+
+        // Camera Toggles
+        toggleCameraBtn.addEventListener("click", function() {
+            if (webcamStream) {
+                stopWebcam();
+            } else {
+                startWebcam();
+            }
+        });
+
+        document.getElementById("toggle-mic-permission-btn").addEventListener("click", async function() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                stream.getTracks().forEach(track => track.stop());
+                alert("Microphone connection is working correctly!");
+            } catch (err) {
+                alert("Microphone access denied or not connected.");
+            }
+        });
+
+        // STT Controls
+        sttBtn.addEventListener("click", function() {
+            if (recognition) {
+                recognition.start();
+            }
+        });
+
+        sttStopBtn.addEventListener("click", function() {
+            if (recognition) {
+                recognition.stop();
+            }
+        });
+
+        // TTS Controls
+        ttsPlayBtn.addEventListener("click", function() {
+            speakQuestion(activeQuestion);
+        });
+
+        ttsStopBtn.addEventListener("click", function() {
+            if (synth) synth.cancel();
+            aiStatus.innerText = "Ready";
+            pulseRing.style.display = "none";
+            waveform.classList.remove("active");
+        });
+
+        ttsMuteBtn.addEventListener("click", function() {
+            isMuted = !isMuted;
+            if (isMuted) {
+                ttsMuteBtn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+                ttsMuteBtn.classList.replace("btn-outline-secondary", "btn-danger");
+                if (synth) synth.cancel();
+            } else {
+                ttsMuteBtn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
+                ttsMuteBtn.classList.replace("btn-danger", "btn-outline-secondary");
+            }
+        });
+
+        // Load Session state from API
+        function loadSessionState() {
+            fetch(`/interview/api/session/${sessionId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        activeQuestion = data.active_question;
+                        activeQuestionText.innerText = activeQuestion;
+                        activeQuestionType.innerText = `Question Type: ${data.active_question_type}`;
+                        
+                        // Progress
+                        const percentage = ((data.current_question_no - 1) / data.total_questions) * 100;
+                        sessionProgressBar.style.width = `${percentage}%`;
+                        progressIndicator.innerText = `Question ${data.current_question_no} of ${data.total_questions}`;
+
+                        // Speak new question
+                        speakQuestion(activeQuestion);
+
+                        // Populate timeline history
+                        timeline.innerHTML = "";
+                        data.history.forEach(item => {
+                            const qDiv = document.createElement("div");
+                            qDiv.className = "d-flex flex-column align-items-start w-100";
+                            qDiv.innerHTML = `<div class="bubble ai"><strong> Elena:</strong> ${item.question}</div>`;
+                            
+                            const aDiv = document.createElement("div");
+                            aDiv.className = "d-flex flex-column align-items-end w-100";
+                            aDiv.innerHTML = `<div class="bubble candidate"><strong> You:</strong> ${item.answer}</div>`;
+                            
+                            timeline.appendChild(qDiv);
+                            timeline.appendChild(aDiv);
+                        });
+
+                        // Auto scroll timeline to bottom
+                        timeline.scrollTop = timeline.scrollHeight;
+                    } else {
+                        alert("Error loading interview state: " + data.error);
+                    }
+                })
+                .catch(err => console.error("API error:", err));
+        }
+
+        // Submit candidate response
+        submitBtn.addEventListener("click", function() {
+            const answer = answerTextarea.value.trim();
+            if (!answer) {
+                alert("Please write or speak an answer before submitting.");
+                return;
+            }
+
+            if (recognition) {
+                recognition.stop();
+            }
+
+            // Lock controls & show status loading
+            submitBtn.disabled = true;
+            answerTextarea.disabled = true;
+            aiStatus.innerText = "Evaluating";
+            pulseRing.style.display = "block";
+            activeQuestionText.innerText = "Evaluating response. Generating follow-up question...";
+
+            fetch("/interview/api/submit-answer", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    answer: answer
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                submitBtn.disabled = false;
+                answerTextarea.disabled = false;
+                answerTextarea.value = "";
+
+                if (data.success) {
+                    if (data.is_finished) {
+                        if (synth) synth.cancel();
+                        window.location.href = `/interview/report/${sessionId}`;
+                    } else {
+                        loadSessionState();
+                    }
+                } else {
+                    alert("Submission failed: " + data.error);
+                    activeQuestionText.innerText = activeQuestion;
+                    aiStatus.innerText = "Ready";
+                    pulseRing.style.display = "none";
+                }
+            })
+            .catch(err => {
+                submitBtn.disabled = false;
+                answerTextarea.disabled = false;
+                console.error(err);
+                alert("Network communication error. Please try again.");
+                activeQuestionText.innerText = activeQuestion;
+                aiStatus.innerText = "Ready";
+                pulseRing.style.display = "none";
+            });
+        });
+
+        // Abort / End Session early
+        endBtn.addEventListener("click", function() {
+            if (confirm("Are you sure you want to end this interview session? Your completed answers will be evaluated to generate a final report.")) {
+                if (synth) synth.cancel();
+                
+                endBtn.disabled = true;
+                submitBtn.disabled = true;
+                aiStatus.innerText = "Finalizing";
+                
+                fetch("/interview/api/finish-session", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken
+                    },
+                    body: JSON.stringify({
+                        session_id: sessionId
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = `/interview/report/${sessionId}`;
+                    } else {
+                        alert("Failed to finalize session: " + data.error);
+                        endBtn.disabled = false;
+                        submitBtn.disabled = false;
+                        aiStatus.innerText = "Ready";
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Failed to end session due to connection issues.");
+                    endBtn.disabled = false;
+                    submitBtn.disabled = false;
+                    aiStatus.innerText = "Ready";
+                });
+            }
+        });
+
+        // Initial Load
+        loadSessionState();
+    });
+</script>
+{% endblock %}
