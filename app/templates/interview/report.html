@@ -61,8 +61,8 @@
                                 <span class="small fw-bold text-white">{{ score | int }}%</span>
                             </div>
                             <div class="progress bg-dark" style="height: 8px;">
-                                <div class="progress-bar {% if score >= 80 %}bg-success{% elif score >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
-                                     role="progressbar" style="width: {{ score }}%;"></div>
+                                <div class="progress-bar dimension-bar {% if score >= 80 %}bg-success{% elif score >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                     role="progressbar" data-score="{{ score }}" style="width: 0%;"></div>
                             </div>
                         </div>
                         {% endfor %}
@@ -242,4 +242,15 @@
         box-shadow: none !important;
     }
 </style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.dimension-bar').forEach(bar => {
+            const score = bar.getAttribute('data-score');
+            if (score) {
+                bar.style.width = score + '%';
+            }
+        });
+    });
+</script>
 {% endblock %}

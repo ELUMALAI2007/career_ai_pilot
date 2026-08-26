@@ -67,7 +67,7 @@
                         <span>{{ scores.correct }}/{{ scores.total }} ({{ pct }}%)</span>
                     </div>
                     <div class="progress bg-dark" style="height: 10px;">
-                        <div class="progress-bar {% if pct >= 75 %}bg-success{% elif pct >= 50 %}bg-warning{% else %}bg-danger{% endif %}" style="width: {{ pct }}%;"></div>
+                        <div class="progress-bar {% if pct >= 75 %}bg-success{% elif pct >= 50 %}bg-warning{% else %}bg-danger{% endif %}" role="progressbar" data-pct="{{ pct }}" style="width: 0%;"></div>
                     </div>
                 </div>
                 {% endfor %}
@@ -111,6 +111,17 @@
                 </div>
             </div>
         </div>
-    </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.progress-bar[data-pct]').forEach(bar => {
+            const pct = bar.getAttribute('data-pct');
+            if (pct) {
+                bar.style.width = pct + '%';
+            }
+        });
+    });
+</script>
 {% endblock %}
+
