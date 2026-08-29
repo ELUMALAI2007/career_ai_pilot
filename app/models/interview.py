@@ -8,6 +8,20 @@ import json
 from app import db
 
 
+class InterviewQuestion(db.Model):
+    """Reusable question-bank entry for mock interview sessions."""
+    __tablename__ = 'interview_questions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    question = db.Column(db.Text, nullable=False)
+    role = db.Column(db.String(100), nullable=False)
+    interview_type = db.Column(db.String(50), nullable=False)
+    difficulty = db.Column(db.String(30), nullable=False, default='Medium')
+    topic = db.Column(db.String(100), default='General')
+    company = db.Column(db.String(150))
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+
+
 class InterviewSession(db.Model):
     """Mock interview session instance capturing configuration, status, and final feedback."""
     __tablename__ = 'interview_sessions'
@@ -25,6 +39,8 @@ class InterviewSession(db.Model):
     status = db.Column(db.String(30), default='In Progress')    # 'In Progress', 'Completed'
     overall_score = db.Column(db.Float, default=0.0)
     final_feedback = db.Column(db.Text)                         # JSON encoded string of overall feedback
+    question_queue = db.Column(db.JSON, default=list)
+    follow_up_count = db.Column(db.Integer, default=0, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     completed_at = db.Column(db.DateTime)
 
@@ -38,6 +54,12 @@ class InterviewSession(db.Model):
     def set_final_feedback(self, data: dict):
         """Helper setter for serializing final feedback JSON."""
         self.final_feedback = json.dumps(data)
+
+    def get_question_queue(self) -> list:
+        return self.question_queue or []
+
+    def set_question_queue(self, queue: list):
+        self.question_queue = list(queue)
 
 
 class InterviewTurn(db.Model):

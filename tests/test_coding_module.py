@@ -5,11 +5,12 @@ Tests problem models, runner execution, test suite evaluation, and API endpoints
 
 import pytest
 import json
-from app import db
+from app import create_app, db
 from app.models.coding import CodingProblem, CodingSubmission, CodingBookmark, CodingProgress
 from app.models.user import User
 from app.services.code_runner import CodeRunnerService, LocalRunner
 from app.services.coding_service import CodingService
+from config import TestingConfig
 
 
 @pytest.fixture
@@ -45,6 +46,13 @@ def seed_test_problem(app):
     db.session.add(problem)
     db.session.commit()
     return problem
+
+
+def test_create_app_auto_seeds_coding_problems():
+    """The coding challenge bank should be populated automatically on startup."""
+    app_instance = create_app(TestingConfig)
+    with app_instance.app_context():
+        assert CodingProblem.query.count() > 0
 
 
 def test_code_runner_python_success():

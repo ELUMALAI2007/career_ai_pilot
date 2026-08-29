@@ -18,6 +18,10 @@ class GeminiService:
     def __init__(self):
         pass
 
+    @property
+    def model_name(self) -> str:
+        return self._get_model_name()
+
     def _get_api_key(self) -> str:
         try:
             return current_app.config.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY", "")
@@ -26,9 +30,9 @@ class GeminiService:
 
     def _get_model_name(self) -> str:
         try:
-            return current_app.config.get("GEMINI_MODEL_NAME") or os.getenv("GEMINI_MODEL_NAME", "gemini-3.6-flash")
+            return current_app.config.get("GEMINI_MODEL_NAME") or os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash")
         except Exception:
-            return os.getenv("GEMINI_MODEL_NAME", "gemini-3.6-flash")
+            return os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash")
 
     def _call_gemini(self, system_prompt: str, user_content: str) -> str:
         """Calls Gemini API with system + user content and returns the text response."""
@@ -244,8 +248,40 @@ class GeminiService:
     # -------------------------------------------------------------------------
 
     def generate_career_advice(self, user_profile: dict, query: str) -> str:
-        """Generates personalized career recommendations using Gemini LLM."""
-        return "TODO: Gemini Service - Career advice response placeholder."
+        """Generates personalized career recommendations using Gemini when configured, otherwise returns a practical local fallback."""
+        profile = user_profile or {}
+        role = profile.get("role") or profile.get("target_role") or "software engineer"
+        skills = profile.get("skills") or profile.get("skill_list") or []
+        experience = profile.get("experience") or profile.get("experience_years") or "early career"
+        interests = profile.get("interests") or []
+
+        if self._get_api_key():
+            try:
+                system_prompt = (
+                    "You are a helpful career coach. Provide concise, personalized guidance in plain English. "
+                    "Talk like a trusted mentor. Do not mention that you are AI."
+                )
+                user_content = (
+                    f"User profile:\n- Target role: {role}\n- Experience level: {experience}\n- Skills: {', '.join(skills) if skills else 'Not specified'}\n"
+                    f"- Interests: {', '.join(interests) if interests else 'General career growth'}\n"
+                    f"Question: {query}\n\n"
+                    "Return a warm, actionable answer with 3 to 5 concrete recommendations and a short plan for the next 30 days."
+                )
+                response = self._call_gemini(system_prompt, user_content)
+                cleaned = (response or '').strip()
+                if cleaned:
+                    return cleaned
+            except Exception as exc:
+                logger.warning("Gemini career advice fallback triggered: %s", exc)
+
+        skill_text = ", ".join(skills) if skills else "core technical and communication skills"
+        interest_text = ", ".join(interests) if interests else "learning, execution, and career growth"
+        return (
+            f"For someone targeting the {role} path, the best next move is to keep building depth in {skill_text} while also showing momentum in {interest_text}. "
+            f"Start by prioritizing one role-specific skill gap, completing a focused project that demonstrates it, and practicing concise explanations of your work. "
+            f"Then, align your resume and interview stories with the requirements of the role, and run at least 2 mock interviews or technical reviews before applying. "
+            f"For your question, '{query}', a strong 30-day plan is: (1) identify the top 3 job requirements, (2) build or refine a relevant project, (3) practice structured answers, and (4) apply to roles that match your current strengths and growth trajectory."
+        )
 
     def analyze_resume_text(self, resume_text: str, target_role: str) -> dict:
         """Analyzes raw resume text against a target job role for ATS scoring."""

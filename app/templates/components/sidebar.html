@@ -44,9 +44,6 @@
             <a class="sidebar-link {% if request.blueprint == 'planner' %}active{% endif %}" href="{{ url_for('planner.index') }}">
                 <i class="fa-solid fa-calendar-check"></i> Daily Study Planner
             </a>
-            <a class="sidebar-link {% if request.blueprint == 'ai_assistant' %}active{% endif %}" href="{{ url_for('ai_assistant.index') }}">
-                <i class="fa-solid fa-robot"></i> AI Career Assistant
-            </a>
             <a class="sidebar-link {% if request.blueprint == 'analytics' %}active{% endif %}" href="{{ url_for('analytics.index') }}">
                 <i class="fa-solid fa-chart-pie"></i> Detailed Analytics
             </a>

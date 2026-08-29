@@ -19,7 +19,7 @@ from app.models.coding import (
 )
 from app.models.communication import CommunicationAssessment
 from app.models.company_prep import CompanyProfile, PlacementPattern, InterviewExperience
-from app.models.interview import InterviewSession, InterviewTurn
+from app.models.interview import InterviewQuestion, InterviewSession, InterviewTurn
 from app.models.job_eligibility import EligibilityCriteria, JobRequirement
 from app.models.learning_roadmap import Roadmap, RoadmapMilestone
 from app.models.notification import Notification
@@ -41,7 +41,7 @@ __all__ = [
     'CodingProgress', 'DailyChallenge', 'CodingBadge', 'UserBadge',
     'CommunicationAssessment',
     'CompanyProfile', 'PlacementPattern', 'InterviewExperience',
-    'InterviewSession', 'InterviewTurn',
+    'InterviewQuestion', 'InterviewSession', 'InterviewTurn',
     'EligibilityCriteria', 'JobRequirement',
     'Roadmap', 'RoadmapMilestone',
     'Notification',

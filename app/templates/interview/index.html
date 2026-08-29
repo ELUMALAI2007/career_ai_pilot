@@ -2,6 +2,16 @@
 {% block title %}AI Mock Interview - CareerPilot AI{% endblock %}
 
 {% block content %}
+<div id="interview-loading-screen" class="position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center" style="background: rgba(10, 14, 28, 0.78); z-index: 9999; backdrop-filter: blur(4px);">
+    <div class="glass-card p-4 text-center" style="min-width: 320px; max-width: 420px; border-radius: 20px;">
+        <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h4 class="fw-bold mb-2 text-white">Setting up your interview</h4>
+        <p class="text-secondary mb-0">Preparing your questions, resume context, and live interview room...</p>
+    </div>
+</div>
+
 <div class="container py-4">
     <!-- Header -->
     <div class="row mb-4">
@@ -91,14 +101,9 @@
                         </select>
                     </div>
 
-                    <!-- Number of Questions -->
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold"><i class="fa-solid fa-circle-question text-secondary me-1"></i> Number of Questions</label>
-                        <select class="form-select" name="total_questions" required>
-                            <option value="5">5 Questions</option>
-                            <option value="10" selected>10 Questions</option>
-                            <option value="15">15 Questions</option>
-                        </select>
+                    <div class="alert alert-secondary small mb-4">
+                        <i class="fa-solid fa-circle-info me-2"></i>
+                        The number of questions is chosen automatically from the selected difficulty level so each interview feels realistic and consistent.
                     </div>
 
                     <!-- Resume Questions Preference -->
@@ -210,6 +215,7 @@
         const resumeFile = document.getElementById("resumeFile");
         const startBtn = document.getElementById("startBtn");
         const warning = document.getElementById("resume-warning");
+        const loadingScreen = document.getElementById("interview-loading-screen");
 
         function validateResume() {
             const hasSelect = resumeSelect ? resumeSelect.value !== "" : false;
@@ -227,16 +233,24 @@
         if (resumeSelect) {
             resumeSelect.addEventListener("change", validateResume);
         }
-        resumeFile.addEventListener("change", validateResume);
+        if (resumeFile) {
+            resumeFile.addEventListener("change", validateResume);
+        }
 
         setupForm.addEventListener("submit", function(e) {
             const hasSelect = resumeSelect ? resumeSelect.value !== "" : false;
-            const hasFile = resumeFile.files.length > 0;
+            const hasFile = resumeFile && resumeFile.files ? resumeFile.files.length > 0 : false;
 
             if (!hasSelect && !hasFile) {
                 e.preventDefault();
                 warning.classList.remove("d-none");
+                return;
             }
+
+            startBtn.disabled = true;
+            startBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Preparing...';
+            loadingScreen.classList.remove("d-none");
+            loadingScreen.classList.add("d-flex");
         });
 
         // Initialize state

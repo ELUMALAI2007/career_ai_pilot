@@ -1,5 +1,13 @@
 {% extends "base.html" %}
 {% block title %}AI Career Assistant - CareerPilot AI{% endblock %}
+{% block extra_css %}
+<style>
+    #assistant-widget,
+    .assistant-widget {
+        display: none !important;
+    }
+</style>
+{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>

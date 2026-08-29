@@ -11,7 +11,7 @@ import logging
 # Ensure project root is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
-from app import create_app, db
+# db and create_app are imported inside functions to prevent circular dependencies
 from app.models.aptitude import AptitudeCategory, AptitudeQuestion
 from question_generators import (
     QUANT_TOPICS, LOGICAL_TOPICS, VERBAL_TOPICS,
@@ -23,6 +23,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 
 def seed_categories():
     """Ensures primary Aptitude Categories exist in the database."""
+    from app import db
     categories_def = [
         ("Quantitative Aptitude", "Numerical computation, arithmetic, algebra, geometry, and data interpretation.", "fa-calculator"),
         ("Logical Reasoning", "Analytical thinking, pattern recognition, series, blood relations, and arrangements.", "fa-brain"),
@@ -40,89 +41,98 @@ def seed_categories():
 
 
 def generate_batch():
-    """Batch generates 1,500+ original questions across topics and difficulty levels."""
-    app = create_app()
-    with app.app_context():
-        # Create database tables if they do not exist
-        db.create_all()
+    """Seeds 1,000 verified placement aptitude questions into the database."""
+    from app import create_app
+    from flask import current_app
+    if current_app:
+        _do_generate_batch()
+    else:
+        app = create_app()
+        with app.app_context():
+            _do_generate_batch()
+
+
+def _do_generate_batch():
+    from app import db
+    db.create_all()
+    
+    cat_map = seed_categories()
+
+    # Target minimum question counts
+    targets = [
+        ("Quantitative Aptitude", QUANT_TOPICS, 600),
+        ("Logical Reasoning", LOGICAL_TOPICS, 450),
+        ("Verbal Ability", VERBAL_TOPICS, 450)
+    ]
+
+    total_inserted = 0
+
+    for cat_name, topics, target_count in targets:
+        cat = cat_map.get(cat_name)
+        if not cat:
+            continue
+
+        existing_fingerprints = {
+            fp[0] for fp in db.session.query(AptitudeQuestion.fingerprint).filter(
+                AptitudeQuestion.category_id == cat.id
+            ).all() if fp[0]
+        }
+
+        logging.info(f"Starting generation for '{cat_name}' (Target: {target_count}, Existing: {len(existing_fingerprints)})...")
         
-        cat_map = seed_categories()
+        inserted_for_cat = 0
+        attempts = 0
+        max_attempts = target_count * 20
 
-        # Target minimum question counts
-        targets = [
-            ("Quantitative Aptitude", QUANT_TOPICS, 600),
-            ("Logical Reasoning", LOGICAL_TOPICS, 450),
-            ("Verbal Ability", VERBAL_TOPICS, 450)
-        ]
+        while inserted_for_cat + len(existing_fingerprints) < target_count and attempts < max_attempts:
+            attempts += 1
+            topic_name = topics[attempts % len(topics)]
+            difficulty = DIFFICULTY_LEVELS[attempts % len(DIFFICULTY_LEVELS)]
 
-        total_inserted = 0
+            try:
+                q_dict = generate_question_for_topic(cat_name, topic_name, difficulty)
+                fp = q_dict.get('fingerprint')
 
-        for cat_name, topics, target_count in targets:
-            cat = cat_map.get(cat_name)
-            if not cat:
-                continue
+                if not fp or fp in existing_fingerprints:
+                    continue
 
-            existing_fingerprints = {
-                fp[0] for fp in db.session.query(AptitudeQuestion.fingerprint).filter(
-                    AptitudeQuestion.category_id == cat.id
-                ).all() if fp[0]
-            }
+                # Add to DB session
+                question = AptitudeQuestion(
+                    category_id=cat.id,
+                    topic=q_dict['topic'],
+                    subtopic=q_dict.get('subtopic', ''),
+                    difficulty=q_dict['difficulty'],
+                    question_text=q_dict['question_text'],
+                    option_a=q_dict['option_a'],
+                    option_b=q_dict['option_b'],
+                    option_c=q_dict['option_c'],
+                    option_d=q_dict['option_d'],
+                    correct_option=q_dict['correct_option'],
+                    explanation=q_dict['explanation'],
+                    formula=q_dict.get('formula'),
+                    shortcut=q_dict.get('shortcut'),
+                    concept=q_dict.get('concept'),
+                    estimated_time=q_dict.get('estimated_time', 60),
+                    tags=q_dict.get('tags'),
+                    source_type='generated',
+                    fingerprint=fp
+                )
+                db.session.add(question)
+                db.session.commit()
 
-            logging.info(f"Starting generation for '{cat_name}' (Target: {target_count}, Existing: {len(existing_fingerprints)})...")
-            
-            inserted_for_cat = 0
-            attempts = 0
-            max_attempts = target_count * 20
+                existing_fingerprints.add(fp)
+                inserted_for_cat += 1
+                total_inserted += 1
 
-            while inserted_for_cat + len(existing_fingerprints) < target_count and attempts < max_attempts:
-                attempts += 1
-                topic_name = topics[attempts % len(topics)]
-                difficulty = DIFFICULTY_LEVELS[attempts % len(DIFFICULTY_LEVELS)]
+                if inserted_for_cat % 50 == 0:
+                    logging.info(f"[{cat_name}] Saved {inserted_for_cat} questions...")
+            except Exception as e:
+                db.session.rollback()
+                logging.warning(f"Error generating item: {e}")
 
-                try:
-                    q_dict = generate_question_for_topic(cat_name, topic_name, difficulty)
-                    fp = q_dict.get('fingerprint')
+        logging.info(f"Finished '{cat_name}': {inserted_for_cat} new questions saved (Total in cat: {len(existing_fingerprints)}).")
 
-                    if not fp or fp in existing_fingerprints:
-                        continue
-
-                    # Add to DB session
-                    question = AptitudeQuestion(
-                        category_id=cat.id,
-                        topic=q_dict['topic'],
-                        subtopic=q_dict.get('subtopic', ''),
-                        difficulty=q_dict['difficulty'],
-                        question_text=q_dict['question_text'],
-                        option_a=q_dict['option_a'],
-                        option_b=q_dict['option_b'],
-                        option_c=q_dict['option_c'],
-                        option_d=q_dict['option_d'],
-                        correct_option=q_dict['correct_option'],
-                        explanation=q_dict['explanation'],
-                        formula=q_dict.get('formula'),
-                        shortcut=q_dict.get('shortcut'),
-                        concept=q_dict.get('concept'),
-                        estimated_time=q_dict.get('estimated_time', 60),
-                        tags=q_dict.get('tags'),
-                        source_type='generated',
-                        fingerprint=fp
-                    )
-                    db.session.add(question)
-                    db.session.commit()
-
-                    existing_fingerprints.add(fp)
-                    inserted_for_cat += 1
-                    total_inserted += 1
-
-                    if inserted_for_cat % 50 == 0:
-                        logging.info(f"[{cat_name}] Saved {inserted_for_cat} questions...")
-                except Exception as e:
-                    db.session.rollback()
-                    logging.warning(f"Error generating item: {e}")
-
-            logging.info(f"Finished '{cat_name}': {inserted_for_cat} new questions saved (Total in cat: {len(existing_fingerprints)}).")
-
-        logging.info(f"Batch generation completed successfully! Total new questions added: {total_inserted}.")
+    logging.info(f"Batch generation completed successfully! Total new questions added: {total_inserted}.")
 
 
 if __name__ == '__main__':

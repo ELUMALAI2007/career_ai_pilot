@@ -1,0 +1,139 @@
+{% if current_user.is_authenticated and request.endpoint != 'ai_assistant.index' %}
+<div id="assistant-widget" class="assistant-widget" aria-live="polite">
+    <button id="assistant-widget-toggle" class="assistant-widget-toggle" type="button" aria-expanded="false" aria-controls="assistant-widget-panel">
+        <span class="assistant-widget-icon"><i class="fa-solid fa-robot"></i></span>
+        <span class="assistant-widget-label">AI Assistant</span>
+    </button>
+
+    <div id="assistant-widget-panel" class="assistant-widget-panel d-none" role="dialog" aria-modal="false" aria-labelledby="assistant-widget-title">
+        <div class="assistant-widget-header">
+            <div>
+                <small>CareerPilot</small>
+                <h6 id="assistant-widget-title">AI Career Assistant</h6>
+            </div>
+            <button id="assistant-widget-close" class="assistant-widget-close" type="button" aria-label="Close assistant">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div id="assistant-widget-messages" class="assistant-widget-messages">
+            <div class="assistant-message assistant-message-bot">
+                Hi! I can help with career guidance, skill gaps, learning plans, projects, interview prep, and role-specific direction.
+            </div>
+        </div>
+
+        <div class="assistant-widget-suggestions">
+            <button type="button" class="assistant-suggestion-btn">Which role suits me?</button>
+            <button type="button" class="assistant-suggestion-btn">Give me an SDE roadmap</button>
+            <button type="button" class="assistant-suggestion-btn">What should I learn next?</button>
+        </div>
+
+        <div class="assistant-widget-input-row">
+            <textarea id="assistant-widget-input" rows="2" placeholder="Ask about your career..."></textarea>
+            <button id="assistant-widget-send" type="button" class="assistant-send-btn">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const widget = document.getElementById('assistant-widget');
+        if (window.location.pathname.startsWith('/assistant')) {
+            if (widget) widget.remove();
+            return;
+        }
+        if (!widget) return;
+
+        const toggleButton = document.getElementById('assistant-widget-toggle');
+        const panel = document.getElementById('assistant-widget-panel');
+        const closeButton = document.getElementById('assistant-widget-close');
+        const messages = document.getElementById('assistant-widget-messages');
+        const input = document.getElementById('assistant-widget-input');
+        const sendButton = document.getElementById('assistant-widget-send');
+        const csrfToken = '{{ csrf_token() }}';
+
+        function setWidgetState(open) {
+            panel.classList.toggle('d-none', !open);
+            toggleButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+            toggleButton.classList.toggle('is-open', open);
+        }
+
+        function hideInFullscreen() {
+            const fullscreenActive = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+            widget.classList.toggle('assistant-widget-hidden', !!fullscreenActive);
+        }
+
+        toggleButton.addEventListener('click', function () {
+            const isOpen = !panel.classList.contains('d-none');
+            setWidgetState(!isOpen);
+        });
+
+        closeButton.addEventListener('click', function () {
+            setWidgetState(false);
+        });
+
+        function appendMessage(text, sender) {
+            const row = document.createElement('div');
+            row.className = `assistant-message assistant-message-${sender}`;
+            row.textContent = text;
+            messages.appendChild(row);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function sendPrompt(prompt) {
+            const trimmed = (prompt || '').trim();
+            if (!trimmed) return;
+
+            appendMessage(trimmed, 'user');
+            input.value = '';
+            setWidgetState(true);
+
+            fetch('/assistant/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ query: trimmed, session_id: 1 })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.response) {
+                    appendMessage(data.response, 'bot');
+                } else {
+                    appendMessage('I am having trouble connecting right now. Please try again in a moment.', 'bot');
+                }
+            })
+            .catch(() => {
+                appendMessage('I am having trouble connecting right now. Please try again in a moment.', 'bot');
+            });
+        }
+
+        sendButton.addEventListener('click', function () {
+            sendPrompt(input.value);
+        });
+
+        input.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendPrompt(input.value);
+            }
+        });
+
+        document.querySelectorAll('.assistant-suggestion-btn').forEach(function (button) {
+            button.addEventListener('click', function () {
+                input.value = button.textContent.trim();
+                sendPrompt(input.value);
+            });
+        });
+
+        document.addEventListener('fullscreenchange', hideInFullscreen);
+        document.addEventListener('webkitfullscreenchange', hideInFullscreen);
+        document.addEventListener('mozfullscreenchange', hideInFullscreen);
+        document.addEventListener('MSFullscreenChange', hideInFullscreen);
+        hideInFullscreen();
+    });
+</script>
+{% endif %}

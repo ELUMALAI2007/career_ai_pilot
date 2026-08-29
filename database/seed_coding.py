@@ -532,9 +532,11 @@ BADGES_DATA = [
 ]
 
 
-def seed_coding_database():
+def seed_coding_database(app=None):
     """Seeds the coding problems and badges tables."""
-    app = create_app(DevelopmentConfig)
+    if app is None:
+        app = create_app(DevelopmentConfig)
+
     with app.app_context():
         print("Seeding Coding Badges...")
         for b_data in BADGES_DATA:

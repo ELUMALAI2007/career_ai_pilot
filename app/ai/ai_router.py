@@ -6,7 +6,8 @@ Priority order:
   1. OpenRouter key #1  (OPENROUTER_API_KEY / OPEN_ROUTER_KEY)
   2. OpenRouter key #2  (OPEN_ROUTER_KEY_2)
   3. OpenRouter key #3  (OPEN_ROUTER_KEY_3)
-  4. Google Gemini      (GEMINI_API_KEY)
+  4. OpenRouter key #4  (OPEN_ROUTER_KEY_4)
+  5. Google Gemini      (GEMINI_API_KEY)
 
 When any provider raises a ValueError (rate limit, auth error, API error),
 AIRouter logs a warning and immediately tries the next provider. The full
@@ -100,6 +101,27 @@ class AIRouter:
             candidate_answer=candidate_answer,
             resume_summary=resume_summary
         )
+
+    def generate_resume_questions(self, role: str, company: str, interview_type: str, difficulty: str, resume_text: str) -> list[dict]:
+        try:
+            return self._call_with_fallback(
+                "generate_resume_questions", role=role, company=company,
+                interview_type=interview_type, difficulty=difficulty, resume_text=resume_text
+            )
+        except ValueError:
+            logger.warning("No provider supports resume question generation; continuing with bank questions.")
+            return []
+
+    def generate_follow_up(self, session_context: dict, current_question: str, candidate_answer: str, previous_turns: list) -> dict:
+        try:
+            return self._call_with_fallback(
+                "generate_follow_up", session_context=session_context,
+                current_question=current_question, candidate_answer=candidate_answer,
+                previous_turns=previous_turns
+            )
+        except ValueError:
+            logger.warning("No provider supports follow-up generation; continuing with the queue.")
+            return {}
 
     def generate_final_report(self, session_info: dict, all_turns_history: list) -> dict:
         """Compiles the final interview report using the first available provider."""

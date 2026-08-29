@@ -53,7 +53,27 @@ def apply_schema_migrations():
                 print("Adding proctor_flags column to coding_progress table...")
                 conn.execute(text("ALTER TABLE coding_progress ADD COLUMN proctor_flags INTEGER DEFAULT 0"))
 
+        if 'interview_questions' in table_names:
+            interview_question_cols = [c['name'] for c in inspector.get_columns('interview_questions')]
+            if 'question' not in interview_question_cols:
+                print("Migrating legacy interview_questions table...")
+                conn.execute(text("ALTER TABLE interview_questions RENAME TO interview_questions_legacy"))
+
         conn.commit()
+
+    if 'interview_questions' in table_names:
+        interview_question_cols = [c['name'] for c in inspector.get_columns('interview_questions')]
+        if 'question' not in interview_question_cols:
+            db.create_all()
+            with db.engine.begin() as conn:
+                if 'question_text' in interview_question_cols:
+                    conn.execute(text(
+                        "INSERT INTO interview_questions "
+                        "(question, role, interview_type, difficulty, topic, company, is_active) "
+                        "SELECT question_text, 'Software Developer', 'Technical', 'Medium', "
+                        "'General', NULL, 1 FROM interview_questions_legacy "
+                        "WHERE question_text IS NOT NULL AND question_text != ''"
+                    ))
 
 
 def init_database():

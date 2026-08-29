@@ -2,7 +2,8 @@
 {% block title %}Mock Interview Room - CareerPilot AI{% endblock %}
 
 {% block content %}
-<div class="container py-3">
+<div class="container-fluid px-0 py-0" style="min-height: 100vh; background: linear-gradient(135deg, rgba(10,14,28,0.98), rgba(15,23,42,0.96));">
+    <div class="container py-3">
     <!-- Header panel with details and progress -->
     <div class="row mb-3">
         <div class="col-12">
@@ -85,6 +86,7 @@
                     <div class="active-question-card p-3 rounded mb-4">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="badge bg-indigo text-indigo-light" id="active-q-type">Question Type: Loading...</span>
+                            <span class="badge bg-warning-subtle text-warning d-none" id="follow-up-badge">AI Follow-up</span>
                             <span class="text-secondary small fw-bold" id="progress-indicator">Question Loading...</span>
                         </div>
                         <h4 class="fw-bold mb-3 text-white" id="active-question-text">Loading question...</h4>
@@ -131,6 +133,15 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
+</div>
+
+<div id="fullscreen-prompt" class="position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center" style="background: rgba(2,6,23,0.72); z-index: 1100; backdrop-filter: blur(4px);">
+    <div class="glass-card p-4 text-center" style="max-width: 420px; border-radius: 18px;">
+        <h5 class="fw-bold mb-3 text-white">Enter full screen interview</h5>
+        <p class="text-secondary mb-3">This interview is designed to run in full screen for a realistic mock interview experience.</p>
+        <button id="enter-fullscreen-btn" class="btn btn-primary-custom">Go Full Screen</button>
     </div>
 </div>
 
@@ -230,12 +241,67 @@
     }
 </style>
 
+<div id="fullscreen-prompt" class="position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center" style="background: rgba(2,6,23,0.72); z-index: 1100; backdrop-filter: blur(4px);">
+    <div class="glass-card p-4 text-center" style="max-width: 420px; border-radius: 18px;">
+        <h5 class="fw-bold mb-3 text-white">Enter full screen interview</h5>
+        <p class="text-secondary mb-3">This interview is designed to run in full screen for a realistic mock interview experience.</p>
+        <button id="enter-fullscreen-btn" class="btn btn-primary-custom">Go Full Screen</button>
+    </div>
+</div>
+
 <div id="session-data" data-session-id="{{ session.id }}" hidden></div>
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const sessionId = parseInt(document.getElementById("session-data").dataset.sessionId, 10);
         const csrfToken = "{{ csrf_token() }}";
+        const fullscreenPrompt = document.getElementById("fullscreen-prompt");
+        const enterFullscreenBtn = document.getElementById("enter-fullscreen-btn");
+
+        function requestInterviewFullscreen() {
+            const docEl = document.documentElement;
+            const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+            const fullscreenActive = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+
+            if (!fullscreenActive && requestFS) {
+                requestFS.call(docEl).then(() => {
+                    if (fullscreenPrompt) {
+                        fullscreenPrompt.classList.add("d-none");
+                        fullscreenPrompt.classList.remove("d-flex");
+                    }
+                }).catch(() => {
+                    if (fullscreenPrompt) {
+                        fullscreenPrompt.classList.remove("d-none");
+                        fullscreenPrompt.classList.add("d-flex");
+                    }
+                });
+                return;
+            }
+
+            if (!fullscreenActive && fullscreenPrompt) {
+                fullscreenPrompt.classList.remove("d-none");
+                fullscreenPrompt.classList.add("d-flex");
+            }
+        }
+
+        if (enterFullscreenBtn) {
+            enterFullscreenBtn.addEventListener("click", function () {
+                requestInterviewFullscreen();
+            });
+        }
+
+        if (fullscreenPrompt) {
+            fullscreenPrompt.classList.remove("d-none");
+            fullscreenPrompt.classList.add("d-flex");
+        }
+
+        document.addEventListener('fullscreenchange', function () {
+            const fullscreenActive = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+            if (fullscreenPrompt) {
+                fullscreenPrompt.classList.toggle("d-none", fullscreenActive);
+                fullscreenPrompt.classList.toggle("d-flex", !fullscreenActive && !fullscreenPrompt.classList.contains("d-none"));
+            }
+        });
 
         // DOM elements
         const activeQuestionText = document.getElementById("active-question-text");
@@ -315,38 +381,67 @@
             synth.getVoices();
         }
 
-        // STT Speech Recognition
+        // STT Speech Recognition with improved word capture
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition) {
             recognition = new SpeechRecognition();
             recognition.continuous = true;
             recognition.interimResults = true;
             recognition.lang = 'en-US';
+            recognition.maxAlternatives = 1;
 
-            let baseText = '';
+            let committedTranscript = '';
+            let interimTranscript = '';
+            let lastResultIndex = -1;
+
             recognition.onstart = function() {
-                baseText = answerTextarea.value;
+                committedTranscript = answerTextarea.value.trim();
+                interimTranscript = '';
+                lastResultIndex = -1;
                 transcribingIndicator.classList.remove("d-none");
                 sttBtn.classList.add("d-none");
                 sttStopBtn.classList.remove("d-none");
             };
 
             recognition.onresult = function(event) {
-                let interimTranscript = '';
+                // Process new results starting from where we left off
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    const transcript = event.results[i][0].transcript.trim();
+                    const confidence = event.results[i][0].confidence;
+                    
                     if (event.results[i].isFinal) {
-                        baseText += (baseText && !baseText.endsWith(' ') ? ' ' : '') + event.results[i][0].transcript;
+                        // Only add if confidence is reasonable or if we need to capture something
+                        if (transcript && (confidence > 0.5 || transcript.length > 0)) {
+                            committedTranscript += (committedTranscript ? ' ' : '') + transcript;
+                        }
+                        interimTranscript = '';
+                        lastResultIndex = i;
                     } else {
-                        interimTranscript += event.results[i][0].transcript;
+                        // For interim results, capture them (even low confidence)
+                        interimTranscript = transcript;
                     }
                 }
-                answerTextarea.value = baseText + (interimTranscript ? (baseText ? ' ' : '') + interimTranscript : '');
+
+                // Update textarea with both committed and interim
+                answerTextarea.value = [committedTranscript, interimTranscript]
+                    .filter(s => s && s.length > 0)
+                    .join(' ');
             };
 
             recognition.onend = function() {
                 transcribingIndicator.classList.add("d-none");
                 sttBtn.classList.remove("d-none");
                 sttStopBtn.classList.add("d-none");
+                
+                // Auto-restart if user was still speaking (continuous mode)
+                // This keeps the mic open as long as the button says "Stop"
+                if (!sttStopBtn.classList.contains("d-none")) {
+                    setTimeout(() => {
+                        if (recognition && !sttStopBtn.classList.contains("d-none")) {
+                            recognition.start();
+                        }
+                    }, 100);
+                }
             };
 
             recognition.onerror = function(event) {
@@ -355,10 +450,12 @@
                     alert("Microphone access denied! Please click the camera/mic icon in the browser address bar and grant access to this site.");
                 } else if (event.error === 'service-not-allowed') {
                     alert("Speech recognition is blocked or not allowed on this browser.");
+                } else if (event.error === 'network') {
+                    console.log("Network issue, will retry...");
                 } else {
                     alert("Speech Recognition Error: " + event.error + ". Make sure you are using Google Chrome or Microsoft Edge on localhost/HTTPS.");
                 }
-                recognition.stop();
+                // Don't stop on error - let it retry
             };
         } else {
             sttBtn.disabled = true;
@@ -413,6 +510,10 @@
 
         // STT Controls
         sttBtn.addEventListener("click", function() {
+            if (window.isSecureContext === false) {
+                alert("Speech recognition requires a secure context (HTTPS or localhost/127.0.0.1). If you are accessing this site via a local IP address (e.g. 192.168.x.x), please use http://127.0.0.1:5000 instead.");
+                return;
+            }
             if (recognition) {
                 recognition.start();
             }
@@ -420,7 +521,8 @@
 
         sttStopBtn.addEventListener("click", function() {
             if (recognition) {
-                recognition.stop();
+                // Abort will stop recognition and trigger onend
+                recognition.abort();
             }
         });
 
@@ -457,14 +559,22 @@
                         activeQuestion = data.active_question;
                         activeQuestionText.innerText = activeQuestion;
                         activeQuestionType.innerText = `Question Type: ${data.active_question_type}`;
+                        document.getElementById("follow-up-badge").classList.toggle("d-none", data.active_question_type !== "Follow-up");
                         
                         // Progress
-                        const percentage = ((data.current_question_no - 1) / data.total_questions) * 100;
-                        sessionProgressBar.style.width = `${percentage}%`;
+                        const percentage = data.total_questions ? ((data.current_question_no - 1) / data.total_questions) * 100 : 0;
+                        sessionProgressBar.style.width = `${Math.min(100, Math.max(0, percentage))}%`;
                         progressIndicator.innerText = `Question ${data.current_question_no} of ${data.total_questions}`;
 
+                        if (data.active_question_type === "Coding Challenge") {
+                            activeQuestionText.innerText = `${activeQuestion}`;
+                            activeQuestionType.innerText = "Question Type: Coding Challenge";
+                        }
+
                         // Speak new question
-                        speakQuestion(activeQuestion);
+                        if (data.active_question_type !== "Coding Challenge") {
+                            speakQuestion(activeQuestion);
+                        }
 
                         // Populate timeline history
                         timeline.innerHTML = "";
@@ -573,7 +683,7 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        window.location.href = `/interview/report/${sessionId}`;
+                        window.location.replace(data.report_url || `/interview/report/${sessionId}`);
                     } else {
                         alert("Failed to finalize session: " + data.error);
                         endBtn.disabled = false;

@@ -221,6 +221,17 @@
                     </div>
                     {% endfor %}
                 </div>
+                {% if feedback.per_question_feedback %}
+                <div class="mt-4">
+                    <h5 class="fw-bold">Final Per-question Feedback</h5>
+                    {% for item in feedback.per_question_feedback %}
+                    <div class="border-bottom border-secondary-subtle py-2">
+                        <strong>Q{{ loop.index }}:</strong> {{ item.feedback }}
+                        {% if item.score is defined %}<span class="badge bg-secondary ms-2">{{ item.score }}/100</span>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>

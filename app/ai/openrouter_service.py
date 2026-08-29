@@ -18,7 +18,7 @@ class OpenRouterService:
     """Service wrapper for OpenRouter API integration with multi-key rotation fallback."""
 
     def __init__(self):
-        pass
+        self.cooldowns = {}
 
     def _get_providers(self) -> list:
         """
@@ -28,6 +28,7 @@ class OpenRouterService:
         Slot 1: OPENROUTER_API_KEY  + OPENROUTER_MODEL   (default: google/gemma-4-31b-it:free)
         Slot 2: OPEN_ROUTER_KEY_2   + OPENROUTER_MODEL_2 (default: meta-llama/llama-3.3-70b-instruct:free)
         Slot 3: OPEN_ROUTER_KEY_3   + OPENROUTER_MODEL_3 (default: deepseek/deepseek-r1-0528:free)
+        Slot 4: OPEN_ROUTER_KEY_4   + OPENROUTER_MODEL_4 (default: qwen/qwen-2.5-72b-instruct:free)
         """
         def cfg(name, default=''):
             try:
@@ -48,6 +49,10 @@ class OpenRouterService:
                 cfg('OPEN_ROUTER_KEY_3'),
                 cfg('OPENROUTER_MODEL_3', 'deepseek/deepseek-r1-0528:free')
             ),
+            (
+                cfg('OPEN_ROUTER_KEY_4'),
+                cfg('OPENROUTER_MODEL_4', 'qwen/qwen-2.5-72b-instruct:free')
+            ),
         ]
 
         seen_keys = set()
@@ -56,7 +61,24 @@ class OpenRouterService:
             if key and key not in seen_keys:
                 seen_keys.add(key)
                 providers.append((key, model))
-        return providers
+
+        # Filter out rate-limited providers currently in cooldown
+        now = time.time()
+        active_providers = []
+        for key, model in providers:
+            # Clean up expired cooldowns
+            if key in self.cooldowns and now > self.cooldowns[key]:
+                del self.cooldowns[key]
+            
+            if key not in self.cooldowns:
+                active_providers.append((key, model))
+
+        # If all providers are in cooldown, reuse them all as a last resort
+        if not active_providers and providers:
+            logger.warning("All OpenRouter API keys are in cooldown. Trying them anyway as a last resort.")
+            return providers
+
+        return active_providers
 
     def _call_with_key(self, api_key: str, model: str, messages: list, response_format: dict = None, max_retries: int = 2) -> str:
         """Attempts to call OpenRouter API with a specific key; retries on transient errors, raises immediately on 429."""
@@ -83,8 +105,9 @@ class OpenRouterService:
                     data = response.json()
                     return data['choices'][0]['message']['content']
                 elif response.status_code == 429:
-                    # Rate-limited — signal caller to rotate to next key immediately
-                    logger.warning(f"OpenRouter key ...{api_key[-6:]} hit rate limit (429). Rotating key.")
+                    # Rate-limited — signal caller to rotate to next key immediately and apply cooldown
+                    self.cooldowns[api_key] = time.time() + 900
+                    logger.warning(f"OpenRouter key ...{api_key[-6:]} hit rate limit (429). Rotating key and applying 15-minute cooldown.")
                     raise ValueError(f"RATE_LIMIT: key ...{api_key[-6:]} exhausted.")
                 else:
                     logger.error(f"OpenRouter key ...{api_key[-6:]} returned {response.status_code}: {response.text}")
@@ -188,6 +211,35 @@ class OpenRouterService:
             "question_type": "HR"
         }
         return self._clean_and_parse_json(raw_resp, default_keys=["question", "question_type"], default_val=default_val)
+
+    def generate_resume_questions(self, role: str, company: str, interview_type: str, difficulty: str, resume_text: str) -> list[dict]:
+        """Generate resume-specific questions once at session start."""
+        system_prompt = (
+            "Create mock interview questions from a candidate resume. Respond only as JSON with a "
+            "'questions' array; each item has 'question', 'question_type', and 'topic'. "
+            "Use only facts in the resume and return 3 to 5 questions."
+        )
+        user_content = f"Role: {role}\nCompany: {company or 'General'}\nInterview type: {interview_type}\nDifficulty: {difficulty}\nResume:\n{resume_text or 'No resume text available.'}"
+        raw_resp = self._call_openrouter(
+            [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_content}],
+            response_format={"type": "json_object"}
+        )
+        parsed = self._clean_and_parse_json(raw_resp, ["questions"], {"questions": []})
+        return parsed["questions"] if isinstance(parsed.get("questions"), list) else []
+
+    def generate_follow_up(self, session_context: dict, current_question: str, candidate_answer: str, previous_turns: list) -> dict:
+        """Generate one focused follow-up for an incomplete answer."""
+        system_prompt = (
+            "You are a professional interviewer. Generate one concise follow-up question asking for "
+            "clarification or evidence. Respond only as JSON with 'question', 'question_type', and 'topic'."
+        )
+        user_content = f"Session: {json.dumps(session_context)}\nCurrent question: {current_question}\nCandidate answer: {candidate_answer}\nPrevious turns: {json.dumps(previous_turns)}"
+        raw_resp = self._call_openrouter(
+            [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_content}],
+            response_format={"type": "json_object"}
+        )
+        default = {"question": "Could you explain that with a specific example?", "question_type": "Follow-up", "topic": "Clarification"}
+        return self._clean_and_parse_json(raw_resp, ["question", "question_type", "topic"], default)
 
     def evaluate_turn_and_generate_next(
         self,
@@ -333,6 +385,9 @@ class OpenRouterService:
             "  ],\n"
             "  \"recommended_improvements\": [\n"
             "     \"string providing practical, actionable suggestion for future interviews\"\n"
+            "  ],\n"
+            "  \"per_question_feedback\": [\n"
+            "     {\"question\": \"string\", \"feedback\": \"string\", \"score\": integer}\n"
             "  ]\n"
             "}\n"
             f"Under 'dimension_scores', provide overall scores (0 to 100) for exactly these dimensions: {dimensions_str}.\n"
@@ -366,7 +421,8 @@ class OpenRouterService:
             "dimension_scores": default_dim_scores,
             "strengths": ["Completed the full mock interview session successfully."],
             "areas_for_improvement": ["Elaborate more on design decisions and practical trade-offs."],
-            "recommended_improvements": ["Review the core structures and algorithms commonly asked for your target role."]
+            "recommended_improvements": ["Review the core structures and algorithms commonly asked for your target role."],
+            "per_question_feedback": []
         }
 
         raw_resp = self._call_openrouter(messages, response_format={"type": "json_object"})

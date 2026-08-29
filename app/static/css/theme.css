@@ -398,3 +398,206 @@ p, .text-secondary {
 .password-toggle-btn:hover {
     color: var(--text-primary);
 }
+
+:fullscreen .sidebar-wrapper,
+:fullscreen .navbar-custom,
+:fullscreen footer,
+:fullscreen .assistant-widget {
+    display: none !important;
+}
+
+:fullscreen body {
+    overflow: hidden;
+}
+
+/* Project Strength Progress Bar */
+.project-progress {
+    height: 10px;
+}
+
+/* Floating AI Assistant Widget */
+.assistant-widget {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    pointer-events: none;
+}
+
+.assistant-widget-hidden {
+    display: none !important;
+}
+
+.assistant-widget-toggle,
+.assistant-widget-panel {
+    pointer-events: auto;
+}
+
+.assistant-widget-toggle {
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: #ffffff;
+    padding: 0.85rem 1.15rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    box-shadow: 0 16px 30px rgba(79, 70, 229, 0.28);
+    font-weight: 600;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.assistant-widget-toggle:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 20px 32px rgba(79, 70, 229, 0.32);
+}
+
+.assistant-widget-toggle.is-open {
+    border-radius: 20px 20px 0 0;
+}
+
+.assistant-widget-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.assistant-widget-label {
+    white-space: nowrap;
+}
+
+.assistant-widget-panel {
+    width: min(360px, calc(100vw - 32px));
+    background: rgba(15, 23, 42, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px 18px 0 18px;
+    box-shadow: 0 24px 48px rgba(15, 23, 42, 0.3);
+    overflow: hidden;
+    margin-top: 0.75rem;
+}
+
+.assistant-widget-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1rem 0.6rem;
+    background: rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    color: #f8fafc;
+}
+
+.assistant-widget-header small {
+    display: block;
+    color: #a5b4fc;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.assistant-widget-header h6 {
+    margin: 0.15rem 0 0;
+    color: #f8fafc !important;
+}
+
+.assistant-widget-close {
+    border: none;
+    background: transparent;
+    color: #cbd5e1;
+    font-size: 1.1rem;
+}
+
+.assistant-widget-messages {
+    max-height: 260px;
+    overflow-y: auto;
+    padding: 0.9rem 0.9rem 0.5rem;
+    background: rgba(15, 23, 42, 0.86);
+    color: #e2e8f0;
+}
+
+.assistant-message {
+    padding: 0.7rem 0.8rem;
+    border-radius: 12px;
+    margin-bottom: 0.6rem;
+    line-height: 1.45;
+    font-size: 0.92rem;
+    word-wrap: break-word;
+}
+
+.assistant-message-bot {
+    background: rgba(148, 163, 184, 0.12);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    color: #e2e8f0;
+}
+
+.assistant-message-user {
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.9) 0%, rgba(2, 132, 199, 0.9) 100%);
+    margin-left: 1.2rem;
+    color: #fff;
+}
+
+.assistant-widget-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.5rem 0.9rem 0.2rem;
+    background: rgba(15, 23, 42, 0.86);
+}
+
+.assistant-suggestion-btn {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: #e2e8f0;
+    border-radius: 999px;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.78rem;
+}
+
+.assistant-widget-input-row {
+    display: flex;
+    gap: 0.6rem;
+    padding: 0.75rem 0.9rem 0.9rem;
+    background: rgba(15, 23, 42, 0.9);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#assistant-widget-input {
+    flex: 1;
+    background: rgba(15, 23, 42, 0.8);
+    color: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 12px;
+    padding: 0.7rem 0.8rem;
+    resize: none;
+    min-height: 54px;
+}
+
+#assistant-widget-input::placeholder {
+    color: #94a3b8;
+}
+
+.assistant-send-btn {
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: #fff;
+    width: 44px;
+    height: 44px;
+    align-self: end;
+}
+
+@media (max-width: 768px) {
+    .assistant-widget {
+        right: 12px;
+        bottom: 12px;
+    }
+
+    .assistant-widget-panel {
+        width: min(320px, calc(100vw - 20px));
+    }
+}

@@ -43,13 +43,8 @@ def index():
         interview_type = request.form.get('interview_type', '').strip()
         difficulty = request.form.get('difficulty', '').strip()
         company = request.form.get('target_company', '').strip()
-        total_questions = request.form.get('total_questions', '10')
+        total_questions = interview_service.resolve_question_count(difficulty)
         resume_based_questions = request.form.get('resume_based_questions') == 'on'
-
-        try:
-            total_questions = int(total_questions)
-        except ValueError:
-            total_questions = 10
 
         resume_id = None
         resume_file = request.files.get('resume_file')
@@ -175,7 +170,7 @@ def report(session_id):
 @interview_bp.route('/api/submit-answer', methods=['POST'])
 @login_required
 def submit_answer():
-    """Handles turn-level answer submissions, evaluates input, and generates next question."""
+    """Stores an answer and returns only the next queued question."""
     data = request.get_json() or {}
     session_id = data.get('session_id')
     answer = data.get('answer', '').strip()
@@ -199,7 +194,7 @@ def submit_answer():
 @interview_bp.route('/api/finish-session', methods=['POST'])
 @login_required
 def finish_session():
-    """Terminates mock interview early and builds evaluation scorecard."""
+    """Closes the room immediately while final scoring continues in the background."""
     data = request.get_json() or {}
     session_id = data.get('session_id')
 
@@ -207,8 +202,11 @@ def finish_session():
         return jsonify({"success": False, "error": "Missing session_id parameter."}), 400
 
     try:
-        interview_service.finalize_session(session_id)
-        return jsonify({"success": True})
+        session_obj = db.session.get(InterviewSession, session_id)
+        if not session_obj or session_obj.user_id != current_user.id:
+            return jsonify({"success": False, "error": "Interview session not found."}), 404
+        interview_service.finalize_session_async(session_id, current_app._get_current_object())
+        return jsonify({"success": True, "report_url": url_for('interview.report', session_id=session_id)})
     except Exception as e:
         current_app.logger.error(f"Error in finish-session API: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -253,5 +251,7 @@ def get_session_api(session_id):
         "active_question": active_question,
         "active_question_type": active_question_type,
         "active_turn_id": active_turn_id,
+        "follow_up_count": session_obj.follow_up_count or 0,
+        "max_follow_ups": interview_service.MAX_FOLLOW_UPS,
         "history": history
     })
