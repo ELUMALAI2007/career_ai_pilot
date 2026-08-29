@@ -58,7 +58,7 @@
         </div>
     </div>
 
-    {% if current_user.is_authenticated and request.endpoint != 'ai_assistant.index' %}
+    {% if current_user.is_authenticated and request.blueprint != 'ai_assistant' %}
         {% include 'components/assistant_widget.html' %}
     {% endif %}
 

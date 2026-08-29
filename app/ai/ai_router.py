@@ -130,3 +130,18 @@ class AIRouter:
             session_info=session_info,
             all_turns_history=all_turns_history
         )
+
+    def generate_career_advice(self, user_profile: dict, query: str) -> str:
+        """Generates personalized career guidance using the dedicated AI Assistant key with fallback."""
+        try:
+            return self._call_with_fallback(
+                "generate_career_advice",
+                user_profile=user_profile,
+                query=query
+            )
+        except ValueError as e:
+            logger.warning(f"Career advice generation failed: {e}")
+            return (
+                "I'm experiencing temporary service issues. Please try your question again in a moment. "
+                "In the meantime, consider: What specific role are you targeting, and what skills would help you stand out?"
+            )

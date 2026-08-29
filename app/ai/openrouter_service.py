@@ -80,6 +80,70 @@ class OpenRouterService:
 
         return active_providers
 
+    def _get_assistant_providers(self) -> list:
+        """
+        Returns an ordered list of (api_key, model) for the AI assistant.
+        Primary: OPEN_ROUTER_KEY_AI_ASSISTANT (dedicated assistant key)
+        Fallback: Standard rotation keys
+        """
+        def cfg(name, default=''):
+            try:
+                return (current_app.config.get(name) or os.getenv(name, default) or default).strip()
+            except Exception:
+                return (os.getenv(name, default) or default).strip()
+
+        providers = []
+        
+        # Primary: AI Assistant key
+        assistant_key = cfg('OPEN_ROUTER_KEY_AI_ASSISTANT')
+        assistant_model = cfg('OPENROUTER_MODEL_AI_ASSISTANT', 'minimax/minimax-m3:free')
+        if assistant_key:
+            providers.append((assistant_key, assistant_model))
+        
+        # Fallback: Standard rotation keys
+        standard_slots = [
+            (
+                cfg('OPENROUTER_API_KEY') or cfg('OPEN_ROUTER_KEY'),
+                cfg('OPENROUTER_MODEL', 'google/gemma-4-31b-it:free')
+            ),
+            (
+                cfg('OPEN_ROUTER_KEY_2'),
+                cfg('OPENROUTER_MODEL_2', 'meta-llama/llama-3.3-70b-instruct:free')
+            ),
+            (
+                cfg('OPEN_ROUTER_KEY_3'),
+                cfg('OPENROUTER_MODEL_3', 'deepseek/deepseek-r1-0528:free')
+            ),
+            (
+                cfg('OPEN_ROUTER_KEY_4'),
+                cfg('OPENROUTER_MODEL_4', 'qwen/qwen-2.5-72b-instruct:free')
+            ),
+        ]
+        
+        seen_keys = {assistant_key} if assistant_key else set()
+        for key, model in standard_slots:
+            if key and key not in seen_keys:
+                seen_keys.add(key)
+                providers.append((key, model))
+        
+        # Filter out rate-limited providers currently in cooldown
+        now = time.time()
+        active_providers = []
+        for key, model in providers:
+            # Clean up expired cooldowns
+            if key in self.cooldowns and now > self.cooldowns[key]:
+                del self.cooldowns[key]
+            
+            if key not in self.cooldowns:
+                active_providers.append((key, model))
+        
+        # If all providers are in cooldown, reuse them all as a last resort
+        if not active_providers and providers:
+            logger.warning("All AI Assistant providers are in cooldown. Trying them anyway as a last resort.")
+            return providers
+        
+        return active_providers if active_providers else providers
+
     def _call_with_key(self, api_key: str, model: str, messages: list, response_format: dict = None, max_retries: int = 2) -> str:
         """Attempts to call OpenRouter API with a specific key; retries on transient errors, raises immediately on 429."""
         headers = {
@@ -435,3 +499,90 @@ class OpenRouterService:
                 if d not in parsed["dimension_scores"]:
                     parsed["dimension_scores"][d] = 50
         return parsed
+
+    def generate_career_advice(self, user_profile: dict, query: str) -> str:
+        """Generates personalized career guidance with structured formatting using the dedicated AI assistant key."""
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are an expert career coach and mentor at CareerPilot. Provide personalized, actionable career guidance. "
+                    "Be encouraging, specific, and practical. Focus on the user's role and growth areas. "
+                    "\n\nFormatted Response Guidelines:"
+                    "\n- Use clear section headers (e.g., '📌 Key Insight:', '💡 Action Steps:', '🎯 Quick Tips:')"
+                    "\n- Use bullet points for multiple items (use • or -, each on new line)"
+                    "\n- Keep sections concise but comprehensive"
+                    "\n- Use emoji indicators for visual clarity"
+                    "\n- Separate sections with blank lines"
+                    "\n- Avoid long paragraphs; prefer short, scannable content"
+                    "\n- Use Markdown headings with ## (for example, ## Action plan) so the response renders clearly in the chat."
+                    "\n- Use numbered lists for sequential steps and - for supporting points."
+                    "\n- Use **bold** only to emphasize key terms."
+                    "\n\nExample structure:"
+                    "\n📌 Key Insight"
+                    "\nBrief statement about their situation."
+                    "\n\n💡 Action Steps"
+                    "\n• First actionable step"
+                    "\n• Second actionable step"
+                    "\n• Third actionable step"
+                    "\n\n🎯 Quick Tips"
+                    "\n• Tip 1"
+                    "\n• Tip 2"
+                )
+            },
+            {
+                "role": "user",
+                "content": query
+            }
+        ]
+
+        # Use the dedicated AI Assistant providers with primary key + fallback to standard keys
+        providers = self._get_assistant_providers()
+        
+        for api_key, model in providers:
+            try:
+                response = self._call_with_key(api_key, model, messages)
+                if response:
+                    return self._format_career_advice(response)
+            except ValueError as e:
+                logger.warning(f"AI Assistant provider failed for generate_career_advice: {e}")
+                continue
+        
+        # Fallback structured response if all providers fail
+        return (
+            "❌ Service Temporarily Unavailable\n\n"
+            "I'm experiencing temporary service issues. Please try again in a moment.\n\n"
+            "💡 In the meantime, consider:\n"
+            "• What specific role are you targeting?\n"
+            "• What skills would help you stand out?\n"
+            "• Who can you connect with for mentorship?\n\n"
+            "Your guidance will be back shortly!"
+        )
+
+    def _format_career_advice(self, response: str) -> str:
+        """Ensures career advice response is properly formatted for readability."""
+        # If response already has structured markers, return as-is
+        if any(marker in response for marker in ['## ', '- ', '* ', '1. ', '**', '📌', '💡', '🎯', '✓', '•']):
+            return response
+        
+        # Otherwise, add basic structure
+        lines = response.strip().split('\n')
+        structured = []
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                structured.append('')
+            elif line[0].isupper() and len(line.split()) >= 2:
+                # Likely a header/section
+                structured.append(f"\n📌 {line}\n")
+            elif any(phrase in line.lower() for phrase in ['step', 'tip', 'recommend', 'consider', 'focus']):
+                # Likely action item
+                if not line.startswith('•'):
+                    structured.append(f"• {line}")
+                else:
+                    structured.append(line)
+            else:
+                structured.append(line)
+        
+        return '\n'.join(structured).strip()

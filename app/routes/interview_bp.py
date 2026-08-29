@@ -9,9 +9,11 @@ from flask_login import login_required, current_user
 from app import db
 from app.models.interview import InterviewSession, InterviewTurn
 from app.services.interview_service import InterviewService
+from app.services.coding_service import CodingService
 
 interview_bp = Blueprint('interview', __name__)
 interview_service = InterviewService()
+coding_service = CodingService()
 
 PREDEFINED_ROLES = [
     "Software Developer",
@@ -43,7 +45,9 @@ def index():
         interview_type = request.form.get('interview_type', '').strip()
         difficulty = request.form.get('difficulty', '').strip()
         company = request.form.get('target_company', '').strip()
-        total_questions = interview_service.resolve_question_count(difficulty)
+        total_questions = interview_service.resolve_question_count(
+            difficulty, request.form.get('total_questions')
+        )
         resume_based_questions = request.form.get('resume_based_questions') == 'on'
 
         resume_id = None
@@ -191,6 +195,69 @@ def submit_answer():
         return jsonify({"success": False, "error": "Failed to evaluate response. Please try again."}), 500
 
 
+@interview_bp.route('/api/submit-coding-solution', methods=['POST'])
+@login_required
+def submit_coding_solution():
+    """Grade the active interview coding challenge and advance only if accepted."""
+    data = request.get_json() or {}
+    session_id = data.get('session_id')
+    code = data.get('code', '').strip()
+    if not session_id or not code:
+        return jsonify({"success": False, "error": "A solution is required."}), 400
+
+    session_obj = db.session.get(InterviewSession, session_id)
+    if not session_obj or session_obj.user_id != current_user.id:
+        return jsonify({"success": False, "error": "Interview session not found."}), 404
+    active_turn = InterviewTurn.query.filter_by(
+        session_id=session_id, sequence_number=session_obj.current_question_no
+    ).first()
+    if not active_turn or active_turn.question_type != "Coding Challenge":
+        return jsonify({"success": False, "error": "There is no active coding challenge."}), 400
+
+    challenge_item = next((item for item in session_obj.get_question_queue()
+                           if item.get("question_type") == "Coding Challenge"
+                           and item.get("question") == active_turn.question), None)
+    challenge_slug = challenge_item.get("challenge_slug") if challenge_item else None
+    if not challenge_slug:
+        # Active items are popped from the queue. Fall back to the stable title
+        # embedded in the stored interview question for existing sessions.
+        from app.models.coding import CodingProblem
+        title = active_turn.question.removeprefix("Coding Challenge:").split(" - ", 1)[0].strip()
+        problem = CodingProblem.query.filter_by(title=title).first()
+        challenge_slug = problem.slug if problem else None
+    if not challenge_slug:
+        return jsonify({"success": False, "error": "Coding challenge details are unavailable."}), 400
+
+    result = coding_service.submit_solution(
+        user_id=current_user.id,
+        problem_slug=challenge_slug,
+        language="python",
+        code_body=code,
+    )
+    if result.get("status") != "Accepted":
+        return jsonify({"success": True, "accepted": False, "coding_result": result})
+
+    advance = interview_service.submit_answer(session_id, "Coding solution accepted.\n\n" + code)
+    return jsonify({"success": True, "accepted": True, "coding_result": result, "advance": advance})
+
+
+@interview_bp.route('/api/skip-coding-challenge', methods=['POST'])
+@login_required
+def skip_coding_challenge():
+    """Record an explicit coding skip and continue with the next interview turn."""
+    data = request.get_json() or {}
+    session_id = data.get('session_id')
+    session_obj = db.session.get(InterviewSession, session_id)
+    if not session_obj or session_obj.user_id != current_user.id:
+        return jsonify({"success": False, "error": "Interview session not found."}), 404
+    active_turn = InterviewTurn.query.filter_by(
+        session_id=session_id, sequence_number=session_obj.current_question_no
+    ).first()
+    if not active_turn or active_turn.question_type != "Coding Challenge":
+        return jsonify({"success": False, "error": "There is no active coding challenge."}), 400
+    return jsonify(interview_service.submit_answer(session_id, "Skipped coding challenge: candidate selected Don't know."))
+
+
 @interview_bp.route('/api/finish-session', methods=['POST'])
 @login_required
 def finish_session():
@@ -225,6 +292,7 @@ def get_session_api(session_id):
     active_question = ""
     active_question_type = "Technical"
     active_turn_id = None
+    active_turn = None
 
     for t in turns:
         if t.candidate_answer is not None:
@@ -237,6 +305,29 @@ def get_session_api(session_id):
             active_question = t.question
             active_question_type = t.question_type or "Technical"
             active_turn_id = t.id
+            active_turn = t
+
+    coding_challenge = None
+    if active_turn and active_question_type == "Coding Challenge":
+        # The queue preserves the selected problem metadata; expose only the
+        # public problem fields needed by the in-interview coding workspace.
+        queue_item = next(
+            (item for item in session_obj.get_question_queue()
+             if item.get("question_type") == "Coding Challenge"
+             and item.get("question") == active_turn.question),
+            None,
+        )
+        if queue_item and queue_item.get("challenge_id"):
+            from app.models.coding import CodingProblem
+            challenge = db.session.get(CodingProblem, queue_item["challenge_id"])
+            if challenge:
+                coding_challenge = challenge.to_public_dict(current_user.id)
+        if coding_challenge is None:
+            from app.models.coding import CodingProblem
+            title = active_turn.question.removeprefix("Coding Challenge:").split(" - ", 1)[0].strip()
+            challenge = CodingProblem.query.filter_by(title=title).first()
+            if challenge:
+                coding_challenge = challenge.to_public_dict(current_user.id)
 
     return jsonify({
         "success": True,
@@ -251,6 +342,7 @@ def get_session_api(session_id):
         "active_question": active_question,
         "active_question_type": active_question_type,
         "active_turn_id": active_turn_id,
+        "coding_challenge": coding_challenge,
         "follow_up_count": session_obj.follow_up_count or 0,
         "max_follow_ups": interview_service.MAX_FOLLOW_UPS,
         "history": history

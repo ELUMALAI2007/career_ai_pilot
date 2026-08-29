@@ -79,7 +79,7 @@
 
         <!-- Question and Conversation Stream Column -->
         <div class="col-lg-8">
-            <div class="glass-card p-4 d-flex flex-column justify-content-between h-100" style="min-height: 520px;">
+            <div id="interview-workspace-card" class="glass-card p-4 d-flex flex-column justify-content-between h-100" style="min-height: 520px;">
                 <!-- Discussion & Timeline Section -->
                 <div>
                     <!-- Active Question Box -->
@@ -110,6 +110,24 @@
                     </div>
 
                     <div class="mb-3 position-relative">
+                        <div id="coding-challenge-panel" class="coding-challenge-panel d-none mb-3">
+                            <div class="coding-challenge-workspace rounded-3 p-4">
+                                <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                                    <h5 id="coding-challenge-title" class="mb-0 text-white"></h5>
+                                    <span id="coding-challenge-difficulty" class="coding-difficulty-badge"></span>
+                                </div>
+                                <p class="coding-workspace-label mb-2">Problem statement</p>
+                                <p id="coding-challenge-description" class="coding-challenge-description mb-3"></p>
+                                <div id="coding-samples" class="coding-samples mb-3"></div>
+                                <div class="row g-3 small mb-4">
+                                    <div class="col-md-6"><div class="coding-meta-card"><strong>Input</strong><span id="coding-challenge-input"></span></div></div>
+                                    <div class="col-md-6"><div class="coding-meta-card"><strong>Output</strong><span id="coding-challenge-output"></span></div></div>
+                                </div>
+                                <label for="coding-editor" class="form-label fw-semibold text-white mb-2"><i class="fa-solid fa-code me-2 text-primary"></i>Your solution · Python</label>
+                                <textarea id="coding-editor" class="coding-editor font-monospace" rows="12" spellcheck="false" placeholder="Write your solution here..."></textarea>
+                                <div id="coding-test-results" class="coding-test-results d-none" aria-live="polite"></div>
+                            </div>
+                        </div>
                         <textarea class="form-control bg-dark-subtle border-secondary-subtle" rows="4" id="answer-textarea" placeholder="Type your response here or click 'Speak' to transcribe your voice..."></textarea>
                         <div class="position-absolute bottom-0 start-0 m-2 d-none" id="transcribing-indicator">
                             <span class="spinner-grow spinner-grow-sm text-primary" role="status"></span>
@@ -124,6 +142,9 @@
                             </button>
                             <button class="btn btn-outline-secondary d-none" id="stt-stop-btn">
                                 <i class="fa-solid fa-microphone-slash me-2"></i> Stop Transcribing
+                            </button>
+                            <button class="btn btn-outline-warning d-none" id="skip-coding-btn">
+                                <i class="fa-solid fa-forward me-1"></i> Don't know — skip
                             </button>
                         </div>
                         <button class="btn btn-success px-4 fw-bold" id="submit-answer-btn">
@@ -239,6 +260,54 @@
         border-top-right-radius: 2px;
         align-self: flex-end;
     }
+    .coding-challenge-workspace { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: 1.25rem; background: #101b31; border: 1px solid rgba(99, 102, 241, 0.52); box-shadow: 0 14px 30px rgba(0, 0, 0, 0.2); }
+    .coding-challenge-workspace > :nth-child(1) { grid-column: 1 / -1; }
+    .coding-challenge-workspace > :nth-child(2) { grid-column: 1; grid-row: 2; }
+    .coding-challenge-workspace > :nth-child(3) { grid-column: 1; grid-row: 3; }
+    .coding-challenge-workspace > :nth-child(4) { grid-column: 1; grid-row: 4; }
+    .coding-challenge-workspace > :nth-child(5) { grid-column: 1; grid-row: 5; }
+    .coding-challenge-workspace > :nth-child(6) { grid-column: 2; grid-row: 2; }
+    .coding-challenge-workspace > :nth-child(7) { grid-column: 2; grid-row: 3 / span 3; }
+    .coding-challenge-workspace > :nth-child(8) { grid-column: 2; grid-row: 6; }
+    .coding-workspace-label { color: #93c5fd; font-size: 0.76rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    .coding-challenge-description { color: #dbeafe; line-height: 1.65; white-space: pre-line; }
+    .coding-difficulty-badge { background: #1d4ed8; color: #eff6ff; border-radius: 999px; padding: 0.35rem 0.7rem; text-transform: capitalize; }
+    .coding-meta-card { height: 100%; padding: 0.8rem; background: #172641; border: 1px solid #2b3d5d; border-radius: 0.5rem; color: #cbd5e1; }
+    .coding-meta-card strong { display: block; margin-bottom: 0.3rem; color: #93c5fd; }
+    .coding-samples { display: grid; gap: 0.55rem; }
+    .coding-sample-card { padding: 0.75rem; background: #0c1628; border-left: 3px solid #4f46e5; border-radius: 0.35rem; }
+    .coding-sample-title { color: #93c5fd; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+    .coding-sample-values { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin: 0.45rem 0; }
+    .coding-sample-values strong { display: block; color: #cbd5e1; font-size: 0.78rem; }
+    .coding-sample-values code { white-space: pre-wrap; color: #f8fafc; }
+    .coding-sample-explanation { color: #cbd5e1; font-size: 0.86rem; line-height: 1.45; }
+    .coding-editor { width: 100%; resize: vertical; min-height: 310px; padding: 1rem; border: 1px solid #334155; border-radius: 0.55rem; outline: none; background: #080f1e; color: #e2e8f0; line-height: 1.55; tab-size: 4; }
+    .coding-editor:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.22); }
+    .coding-test-results { margin-top: 0.8rem; padding: 0.85rem; border: 1px solid #374151; border-radius: 0.55rem; background: #0c1628; }
+    .coding-result-summary { color: #e2e8f0; font-weight: 700; margin-bottom: 0.55rem; }
+    .coding-result-item { display: flex; justify-content: space-between; gap: 0.75rem; padding: 0.45rem 0; border-top: 1px solid #24334d; color: #cbd5e1; font-size: 0.86rem; }
+    .coding-result-item:first-of-type { border-top: 0; }
+    .coding-result-pass { color: #4ade80; }
+    .coding-result-fail { color: #fca5a5; }
+    /* Fullscreen mode intentionally locks the document scroll. Make the
+       interview workspace its own scroll container while solving code. */
+    body.coding-challenge-active #interview-workspace-card {
+        height: calc(100vh - 170px);
+        min-height: 0 !important;
+        max-height: calc(100vh - 170px);
+        overflow-y: scroll;
+        overscroll-behavior: contain;
+        justify-content: flex-start !important;
+    }
+    /* The whole right panel owns scrolling in coding mode. Prevent the
+       previous-answers list from capturing the mouse wheel independently. */
+    body.coding-challenge-active .timeline-container { max-height: none; overflow: visible; }
+    body.coding-challenge-active .coding-editor { min-height: 220px; }
+    @media (max-width: 991px) {
+        body.coding-challenge-active #interview-workspace-card { height: auto; max-height: none; overflow: visible; }
+        .coding-challenge-workspace { display: block; }
+        .coding-editor { min-height: 250px; }
+    }
 </style>
 
 <div id="fullscreen-prompt" class="position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center" style="background: rgba(2,6,23,0.72); z-index: 1100; backdrop-filter: blur(4px);">
@@ -310,9 +379,14 @@
         const sessionProgressBar = document.getElementById("session-progress-bar");
         const timeline = document.getElementById("timeline");
         const answerTextarea = document.getElementById("answer-textarea");
+        const codingPanel = document.getElementById("coding-challenge-panel");
+        const codingEditor = document.getElementById("coding-editor");
+        const codingSamples = document.getElementById("coding-samples");
+        const codingTestResults = document.getElementById("coding-test-results");
         const transcribingIndicator = document.getElementById("transcribing-indicator");
         
         const submitBtn = document.getElementById("submit-answer-btn");
+        const skipCodingBtn = document.getElementById("skip-coding-btn");
         const endBtn = document.getElementById("end-interview-btn");
         const sttBtn = document.getElementById("stt-btn");
         const sttStopBtn = document.getElementById("stt-stop-btn");
@@ -334,6 +408,76 @@
         let webcamStream = null;
         let recognition = null;
         let currentUtterance = null;
+
+        function setCodingChallenge(challenge) {
+            const isCodingChallenge = Boolean(challenge);
+            document.body.classList.toggle("coding-challenge-active", isCodingChallenge);
+            codingPanel.classList.toggle("d-none", !isCodingChallenge);
+            answerTextarea.classList.toggle("d-none", isCodingChallenge);
+            skipCodingBtn.classList.toggle("d-none", !isCodingChallenge);
+            sttBtn.classList.toggle("d-none", isCodingChallenge);
+            if (!isCodingChallenge) return;
+
+            codingTestResults.replaceChildren();
+            codingTestResults.classList.add("d-none");
+
+            document.getElementById("coding-challenge-title").innerText = challenge.title || "Coding Challenge";
+            document.getElementById("coding-challenge-difficulty").innerText = challenge.difficulty || "";
+            document.getElementById("coding-challenge-description").innerText = challenge.description || "";
+            document.getElementById("coding-challenge-input").innerText = challenge.input_format || "Not specified";
+            document.getElementById("coding-challenge-output").innerText = challenge.output_format || "Not specified";
+            codingSamples.replaceChildren();
+            (challenge.sample_test_cases || []).forEach((sample, index) => {
+                const card = document.createElement("div");
+                card.className = "coding-sample-card";
+                const title = document.createElement("div");
+                title.className = "coding-sample-title";
+                title.textContent = `Sample ${index + 1}`;
+                const values = document.createElement("div");
+                values.className = "coding-sample-values";
+                [["Input", sample.input], ["Output", sample.expected_output]].forEach(([label, value]) => {
+                    const column = document.createElement("div");
+                    const heading = document.createElement("strong");
+                    heading.textContent = label;
+                    const code = document.createElement("code");
+                    code.textContent = value || "-";
+                    column.append(heading, code);
+                    values.appendChild(column);
+                });
+                card.append(title, values);
+                if (sample.explanation) {
+                    const explanation = document.createElement("div");
+                    explanation.className = "coding-sample-explanation";
+                    explanation.textContent = `Explanation: ${sample.explanation}`;
+                    card.appendChild(explanation);
+                }
+                codingSamples.appendChild(card);
+            });
+            codingSamples.classList.toggle("d-none", !codingSamples.childElementCount);
+            const templates = challenge.starter_templates || {};
+            codingEditor.value = templates.python || codingEditor.value || "def solve():\n    # Write your solution here\n    pass\n";
+            submitBtn.innerHTML = 'Submit Solution <i class="fa-solid fa-paper-plane ms-2"></i>';
+        }
+
+        function showCodingResults(result) {
+            codingTestResults.replaceChildren();
+            const summary = document.createElement("div");
+            summary.className = "coding-result-summary";
+            summary.textContent = `${result.passed_tests || 0} of ${result.total_tests || 0} test cases passed`;
+            codingTestResults.appendChild(summary);
+            (result.test_results || []).forEach((test, index) => {
+                const item = document.createElement("div");
+                item.className = "coding-result-item";
+                const label = document.createElement("span");
+                label.textContent = `${test.is_sample ? "Sample" : "Hidden"} test ${index + 1}`;
+                const status = document.createElement("span");
+                status.className = test.passed ? "coding-result-pass" : "coding-result-fail";
+                status.textContent = test.passed ? "Passed" : (test.status || "Failed");
+                item.append(label, status);
+                codingTestResults.appendChild(item);
+            });
+            codingTestResults.classList.remove("d-none");
+        }
 
         // Initialize Web Speech APIs
         // TTS Synthesis
@@ -567,8 +711,12 @@
                         progressIndicator.innerText = `Question ${data.current_question_no} of ${data.total_questions}`;
 
                         if (data.active_question_type === "Coding Challenge") {
-                            activeQuestionText.innerText = `${activeQuestion}`;
+                            activeQuestionText.innerText = "Review the problem below, explain your approach, and write a working solution.";
                             activeQuestionType.innerText = "Question Type: Coding Challenge";
+                        }
+                        setCodingChallenge(data.coding_challenge);
+                        if (data.active_question_type !== "Coding Challenge") {
+                            submitBtn.innerHTML = 'Submit Answer <i class="fa-solid fa-paper-plane ms-2"></i>';
                         }
 
                         // Speak new question
@@ -602,9 +750,35 @@
 
         // Submit candidate response
         submitBtn.addEventListener("click", function() {
-            const answer = answerTextarea.value.trim();
+            const answer = codingPanel.classList.contains("d-none")
+                ? answerTextarea.value.trim()
+                : codingEditor.value.trim();
             if (!answer) {
-                alert("Please write or speak an answer before submitting.");
+                alert(codingPanel.classList.contains("d-none") ? "Please write or speak an answer before submitting." : "Please write your solution before submitting.");
+                return;
+            }
+
+            if (!codingPanel.classList.contains("d-none")) {
+                submitBtn.disabled = true;
+                fetch("/interview/api/submit-coding-solution", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
+                    body: JSON.stringify({session_id: sessionId, code: answer})
+                })
+                .then(res => res.json())
+                .then(data => {
+                    submitBtn.disabled = false;
+                    if (!data.success) throw new Error(data.error || "Unable to grade solution.");
+                    if (!data.accepted) {
+                        const result = data.coding_result || {};
+                        showCodingResults(result);
+                        return;
+                    }
+                    alert(`Accepted! ${data.coding_result.passed_tests}/${data.coding_result.total_tests} tests passed.`);
+                    if (data.advance && data.advance.is_finished) window.location.href = `/interview/report/${sessionId}`;
+                    else loadSessionState();
+                })
+                .catch(err => { submitBtn.disabled = false; alert(err.message || "Unable to grade solution."); });
                 return;
             }
 
@@ -635,6 +809,7 @@
                 submitBtn.disabled = false;
                 answerTextarea.disabled = false;
                 answerTextarea.value = "";
+                codingEditor.value = "";
 
                 if (data.success) {
                     if (data.is_finished) {
@@ -659,6 +834,24 @@
                 aiStatus.innerText = "Ready";
                 pulseRing.style.display = "none";
             });
+        });
+
+        skipCodingBtn.addEventListener("click", function() {
+            if (!confirm("Skip this coding challenge and continue to the next question?")) return;
+            skipCodingBtn.disabled = true;
+            fetch("/interview/api/skip-coding-challenge", {
+                method: "POST",
+                headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
+                body: JSON.stringify({session_id: sessionId})
+            })
+            .then(res => res.json())
+            .then(data => {
+                skipCodingBtn.disabled = false;
+                if (!data.success) throw new Error(data.error || "Unable to skip challenge.");
+                if (data.is_finished) window.location.href = `/interview/report/${sessionId}`;
+                else loadSessionState();
+            })
+            .catch(err => { skipCodingBtn.disabled = false; alert(err.message || "Unable to skip challenge."); });
         });
 
         // Abort / End Session early

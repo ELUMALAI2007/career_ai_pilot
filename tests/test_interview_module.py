@@ -38,12 +38,31 @@ def candidate(app_ctx):
         parsed_data_json=json.dumps({"skills": ["Python", "SQL"], "projects": []})
     ))
     db.session.add_all([
+        # Easy
+        InterviewQuestion(question="Tell me about yourself.", role="Software Developer", interview_type="Introduction", difficulty="Easy", topic="About You"),
+        InterviewQuestion(question="Describe a simple project you built.", role="Software Developer", interview_type="Resume", difficulty="Easy", topic="Experience"),
+        InterviewQuestion(question="What is a variable?", role="Software Developer", interview_type="Technical", difficulty="Easy", topic="Basics"),
+        InterviewQuestion(question="How do you handle feedback?", role="Software Developer", interview_type="HR", difficulty="Easy", topic="Communication"),
+        InterviewQuestion(question="Tell me about a success.", role="Software Developer", interview_type="Behavioral", difficulty="Easy", topic="Success"),
+        # Medium
         InterviewQuestion(question="Tell me about yourself.", role="Software Developer", interview_type="Introduction", difficulty="Medium", topic="About You"),
         InterviewQuestion(question="Walk me through your resume.", role="Software Developer", interview_type="Resume", difficulty="Medium", topic="Experience"),
         InterviewQuestion(question="Explain Python testing.", role="Software Developer", interview_type="Technical", difficulty="Medium", topic="Testing"),
         InterviewQuestion(question="Design a reliable API.", role="Software Developer", interview_type="Technical", difficulty="Medium", topic="Design"),
         InterviewQuestion(question="Describe a team conflict.", role="Software Developer", interview_type="HR", difficulty="Medium", topic="Collaboration"),
         InterviewQuestion(question="Tell me about a failure.", role="Software Developer", interview_type="Behavioral", difficulty="Medium", topic="Failure"),
+        # Hard
+        InterviewQuestion(question="Tell me about yourself.", role="Software Developer", interview_type="Introduction", difficulty="Hard", topic="About You"),
+        InterviewQuestion(question="Explain a complex technical decision.", role="Software Developer", interview_type="Resume", difficulty="Hard", topic="Experience"),
+        InterviewQuestion(question="Design a distributed system.", role="Software Developer", interview_type="Technical", difficulty="Hard", topic="System Design"),
+        InterviewQuestion(question="Optimize a complex algorithm.", role="Software Developer", interview_type="Technical", difficulty="Hard", topic="Algorithms"),
+        InterviewQuestion(question="Describe a critical business decision.", role="Software Developer", interview_type="HR", difficulty="Hard", topic="Leadership"),
+        InterviewQuestion(question="Tell me about a major setback.", role="Software Developer", interview_type="Behavioral", difficulty="Hard", topic="Resilience"),
+    ])
+    db.session.add_all([
+        CodingProblem(title="Easy Array Problem", slug="easy-array", description="Work with arrays.", difficulty="easy", topic="Arrays", company_tags="Google", xp_reward=5),
+        CodingProblem(title="Medium String Problem", slug="medium-string", description="Manipulate strings.", difficulty="medium", topic="Strings", company_tags="Google", xp_reward=10),
+        CodingProblem(title="Hard Graph Problem", slug="hard-graph", description="Solve graph problems.", difficulty="hard", topic="Graphs", company_tags="Google", xp_reward=20),
     ])
     db.session.commit()
     return user, resume
@@ -85,7 +104,7 @@ def test_session_uses_bank_without_ai_for_default_questions(candidate):
 def test_resume_questions_use_one_call_at_start(candidate):
     user, resume = candidate
     service = make_service([{"question": "Walk through your Python project.", "question_type": "Resume"}])
-    session = create(service, user, resume, resume_based=True)
+    session = create(service, user, resume, count=5, resume_based=True)
     assert service.ai.generate_resume_questions.call_count == 1
     assert InterviewTurn.query.filter_by(session_id=session.id).first().question.startswith("Tell me about yourself.")
     queue_types = [item.get("question_type") for item in session.get_question_queue()]

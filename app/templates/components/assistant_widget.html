@@ -1,4 +1,4 @@
-{% if current_user.is_authenticated and request.endpoint != 'ai_assistant.index' %}
+{% if current_user.is_authenticated and request.blueprint != 'ai_assistant' %}
 <div id="assistant-widget" class="assistant-widget" aria-live="polite">
     <button id="assistant-widget-toggle" class="assistant-widget-toggle" type="button" aria-expanded="false" aria-controls="assistant-widget-panel">
         <span class="assistant-widget-icon"><i class="fa-solid fa-robot"></i></span>
@@ -58,6 +58,7 @@
             panel.classList.toggle('d-none', !open);
             toggleButton.setAttribute('aria-expanded', open ? 'true' : 'false');
             toggleButton.classList.toggle('is-open', open);
+            widget.classList.toggle('is-panel-open', open);
         }
 
         function hideInFullscreen() {
@@ -77,7 +78,12 @@
         function appendMessage(text, sender) {
             const row = document.createElement('div');
             row.className = `assistant-message assistant-message-${sender}`;
-            row.textContent = text;
+            if (sender === 'bot') {
+                row.classList.add('assistant-rich-content');
+                window.renderAssistantReply(row, text);
+            } else {
+                row.textContent = text;
+            }
             messages.appendChild(row);
             messages.scrollTop = messages.scrollHeight;
         }

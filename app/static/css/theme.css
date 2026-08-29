@@ -106,6 +106,18 @@
     --table-hover-bg: rgba(51, 65, 85, 0.5);
 
     --border-glass: rgba(255, 255, 255, 0.1);
+
+    /* Keep Bootstrap utility classes aligned with the application theme. */
+    --bs-body-bg: #0f172a;
+    --bs-body-color: #f8fafc;
+    --bs-secondary-color: #cbd5e1;
+    --bs-tertiary-bg: #1e293b;
+    --bs-secondary-bg: #172033;
+    --bs-border-color: #334155;
+    --bs-emphasis-color: #f8fafc;
+    --bs-dark-bg-subtle: #1e293b;
+    --bs-light-bg-subtle: #243047;
+    --bs-light-rgb: 226, 232, 240;
 }
 
 /* System Preference Automatic Dark Fallback */
@@ -282,6 +294,8 @@ p, .text-secondary {
     border-bottom: 1px solid var(--navbar-border);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
+    position: relative;
+    z-index: 1100;
 }
 
 .navbar-custom .nav-link {
@@ -318,6 +332,31 @@ p, .text-secondary {
     border: 1px solid var(--dropdown-border) !important;
     color: var(--dropdown-text) !important;
     box-shadow: var(--card-shadow);
+    z-index: 2000;
+}
+
+/* Some pages use Bootstrap's fixed light/dark utility classes. Ensure they
+   cannot create low-contrast text or surfaces when the app is in dark mode. */
+[data-theme="dark"] .bg-light,
+[data-resolved-theme="dark"] .bg-light,
+[data-theme="dark"] .bg-white,
+[data-resolved-theme="dark"] .bg-white {
+    background-color: #1e293b !important;
+}
+
+[data-theme="dark"] .bg-light-subtle,
+[data-resolved-theme="dark"] .bg-light-subtle,
+[data-theme="dark"] .bg-dark-subtle,
+[data-resolved-theme="dark"] .bg-dark-subtle {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+}
+
+[data-theme="dark"] .text-dark,
+[data-resolved-theme="dark"] .text-dark,
+[data-theme="dark"] .text-black,
+[data-resolved-theme="dark"] .text-black {
+    color: #f8fafc !important;
 }
 
 .dropdown-item {
@@ -459,6 +498,10 @@ p, .text-secondary {
     border-radius: 20px 20px 0 0;
 }
 
+.assistant-widget.is-panel-open .assistant-widget-toggle {
+    display: none;
+}
+
 .assistant-widget-icon {
     display: inline-flex;
     align-items: center;
@@ -540,6 +583,19 @@ p, .text-secondary {
     margin-left: 1.2rem;
     color: #fff;
 }
+
+.assistant-rich-content h6 {
+    color: #93c5fd;
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0.85rem 0 0.35rem;
+}
+
+.assistant-rich-content h6:first-child { margin-top: 0; }
+.assistant-rich-content p { margin: 0 0 0.55rem; }
+.assistant-rich-content ul, .assistant-rich-content ol { margin: 0 0 0.65rem; padding-left: 1.25rem; }
+.assistant-rich-content li { margin-bottom: 0.25rem; }
+.assistant-rich-content code { color: #bfdbfe; }
 
 .assistant-widget-suggestions {
     display: flex;

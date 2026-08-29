@@ -84,11 +84,23 @@
                     <!-- Difficulty -->
                     <div class="mb-3">
                         <label class="form-label fw-semibold"><i class="fa-solid fa-gauge text-secondary me-1"></i> Difficulty</label>
-                        <select class="form-select" name="difficulty" required>
+                        <select class="form-select" name="difficulty" id="difficultySelect" required>
                             <option value="Easy">Easy</option>
                             <option value="Medium" selected>Medium</option>
                             <option value="Hard">Hard</option>
                         </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold"><i class="fa-solid fa-list-ol text-secondary me-1"></i> Interview length</label>
+                        <select class="form-select" name="total_questions" id="questionCountSelect">
+                            <option value="10">10 questions</option>
+                            <option value="15" selected>15 questions</option>
+                            <option value="20">20 questions</option>
+                            <option value="25">25 questions</option>
+                            <option value="30">30 questions</option>
+                        </select>
+                        <div class="form-text">Choose a longer interview for a broader, more reliable assessment.</div>
                     </div>
 
                     <!-- Company Selector -->
@@ -103,7 +115,7 @@
 
                     <div class="alert alert-secondary small mb-4">
                         <i class="fa-solid fa-circle-info me-2"></i>
-                        The number of questions is chosen automatically from the selected difficulty level so each interview feels realistic and consistent.
+                        Recommended defaults: 10 questions for Easy, 15 for Medium, and 20 for Hard. You can adjust this to suit your practice time.
                     </div>
 
                     <!-- Resume Questions Preference -->
@@ -256,5 +268,17 @@
         // Initialize state
         validateResume();
     });
+</script>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const difficulty = document.getElementById('difficultySelect');
+    const questionCount = document.getElementById('questionCountSelect');
+    const recommendedCounts = {Easy: '10', Medium: '15', Hard: '20'};
+    difficulty.addEventListener('change', function () {
+        questionCount.value = recommendedCounts[difficulty.value] || '15';
+    });
+});
 </script>
 {% endblock %}

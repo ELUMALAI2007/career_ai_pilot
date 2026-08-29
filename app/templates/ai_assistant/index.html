@@ -20,8 +20,9 @@
     <div id="chatMessagesContainer" class="flex-grow-1 overflow-auto pe-2 mb-3">
         <div class="d-flex gap-3 mb-3">
             <i class="fa-solid fa-robot fs-4 text-primary mt-1"></i>
-            <div class="p-3 rounded-3 bg-dark border border-secondary text-white max-w-75">
-                Hello! I am your CareerPilot AI Assistant. How can I help you prepare for your placement drives today?
+            <div class="p-3 rounded-3 bg-dark border border-secondary text-white max-w-75 assistant-rich-content">
+                <h6>How I can help</h6>
+                <p>Ask me about interview preparation, resumes, skills, projects, or career direction.</p>
             </div>
         </div>
     </div>
@@ -30,4 +31,50 @@
         <button class="btn btn-primary-custom" type="button" id="sendQueryBtn"><i class="fa-solid fa-paper-plane me-1"></i> Send</button>
     </div>
 </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const input = document.getElementById('userQueryInput');
+    const sendButton = document.getElementById('sendQueryBtn');
+    const messages = document.getElementById('chatMessagesContainer');
+    const csrfToken = '{{ csrf_token() }}';
+
+    function appendMessage(text, sender) {
+        const row = document.createElement('div');
+        row.className = 'd-flex gap-3 mb-3 ' + (sender === 'user' ? 'justify-content-end' : '');
+        const bubble = document.createElement('div');
+        bubble.className = sender === 'user'
+            ? 'p-3 rounded-3 bg-primary text-white max-w-75'
+            : 'p-3 rounded-3 bg-dark border border-secondary text-white max-w-75 assistant-rich-content';
+        if (sender === 'user') bubble.textContent = text;
+        else window.renderAssistantReply(bubble, text);
+        row.appendChild(bubble);
+        messages.appendChild(row);
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    function sendPrompt() {
+        const query = input.value.trim();
+        if (!query) return;
+        appendMessage(query, 'user');
+        input.value = '';
+        sendButton.disabled = true;
+        fetch('/assistant/chat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+            body: JSON.stringify({query: query, session_id: 1})
+        })
+        .then(response => response.json())
+        .then(data => appendMessage(data.response || '## Unable to respond\n\nPlease try again in a moment.', 'bot'))
+        .catch(() => appendMessage('## Connection issue\n\nPlease try again in a moment.', 'bot'))
+        .finally(() => { sendButton.disabled = false; input.focus(); });
+    }
+
+    sendButton.addEventListener('click', sendPrompt);
+    input.addEventListener('keydown', event => {
+        if (event.key === 'Enter') { event.preventDefault(); sendPrompt(); }
+    });
+});
+</script>
 {% endblock %}

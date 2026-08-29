@@ -58,6 +58,60 @@ function togglePasswordVisibility(inputFieldId, iconId) {
     }
 }
 
+// Render a small, safe Markdown subset for AI replies. Model output is always
+// inserted as text nodes, never as HTML.
+function renderAssistantReply(container, text) {
+    container.replaceChildren();
+    const lines = String(text || '').replace(/\r\n/g, '\n').split('\n');
+    let list = null;
+    let listType = null;
+    const closeList = () => { list = null; listType = null; };
+
+    function addInlineText(element, value) {
+        value.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).forEach(part => {
+            if (part.startsWith('**') && part.endsWith('**')) {
+                const strong = document.createElement('strong');
+                strong.textContent = part.slice(2, -2);
+                element.appendChild(strong);
+            } else if (part.startsWith('`') && part.endsWith('`')) {
+                const code = document.createElement('code');
+                code.textContent = part.slice(1, -1);
+                element.appendChild(code);
+            } else element.appendChild(document.createTextNode(part));
+        });
+    }
+
+    lines.forEach(rawLine => {
+        const line = rawLine.trim();
+        const heading = line.match(/^#{1,3}\s+(.+)/);
+        const ordered = line.match(/^\d+[.)]\s+(.+)/);
+        const bullet = line.match(/^[-*•]\s+(.+)/);
+        if (heading) {
+            closeList();
+            const title = document.createElement('h6');
+            addInlineText(title, heading[1]);
+            container.appendChild(title);
+        } else if (ordered || bullet) {
+            const type = ordered ? 'ol' : 'ul';
+            if (!list || listType !== type) {
+                list = document.createElement(type);
+                listType = type;
+                container.appendChild(list);
+            }
+            const item = document.createElement('li');
+            addInlineText(item, (ordered || bullet)[1]);
+            list.appendChild(item);
+        } else if (line) {
+            closeList();
+            const paragraph = document.createElement('p');
+            addInlineText(paragraph, line);
+            container.appendChild(paragraph);
+        } else closeList();
+    });
+}
+
+window.renderAssistantReply = renderAssistantReply;
+
 document.addEventListener('DOMContentLoaded', function () {
     // 1. Initialize Theme Preference
     const savedTheme = localStorage.getItem('theme') || 'system';

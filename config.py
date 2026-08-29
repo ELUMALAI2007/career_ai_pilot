@@ -52,7 +52,17 @@ class Config:
 
     # OpenRouter configuration
     OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')
-    OPENROUTER_MODEL = os.environ.get('OPENROUTER_MODEL', 'google/gemma-4-31b-it:free')
+    OPENROUTER_MODEL = os.environ.get('OPENROUTER_MODEL', 'minimax/minimax-m3:free')
+    OPEN_ROUTER_KEY_2 = os.environ.get('OPEN_ROUTER_KEY_2', '')
+    OPENROUTER_MODEL_2 = os.environ.get('OPENROUTER_MODEL_2', 'meta-llama/llama-3.3-70b-instruct:free')
+    OPEN_ROUTER_KEY_3 = os.environ.get('OPEN_ROUTER_KEY_3', '')
+    OPENROUTER_MODEL_3 = os.environ.get('OPENROUTER_MODEL_3', 'deepseek/deepseek-r1-0528:free')
+    OPEN_ROUTER_KEY_4 = os.environ.get('OPEN_ROUTER_KEY_4', '')
+    OPENROUTER_MODEL_4 = os.environ.get('OPENROUTER_MODEL_4', 'qwen/qwen-2.5-72b-instruct:free')
+
+    # AI Assistant specific configuration (with dedicated API key)
+    OPEN_ROUTER_KEY_AI_ASSISTANT = os.environ.get('OPEN_ROUTER_KEY_AI_ASSISTANT', '')
+    OPENROUTER_MODEL_AI_ASSISTANT = os.environ.get('OPENROUTER_MODEL_AI_ASSISTANT', 'minimax/minimax-m3:free')
 
     # Google OAuth 2.0 Credentials & Base URL
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')

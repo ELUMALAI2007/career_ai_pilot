@@ -17,9 +17,9 @@ class InterviewService:
 
     MAX_FOLLOW_UPS = 3
     DIFFICULTY_QUESTION_COUNTS = {
-        "easy": 5,
-        "medium": 10,
-        "hard": 15,
+        "easy": 10,
+        "medium": 15,
+        "hard": 20,
     }
 
     def __init__(self):
@@ -50,10 +50,12 @@ class InterviewService:
         normalized = cls._normalize_difficulty(difficulty)
         return [normalized]
 
-    def _get_coding_challenge(self, difficulty, company, role):
+    def _get_coding_challenge(self, difficulty, company, role, exclude_ids=None):
         from app.models.coding import CodingProblem
+        exclude_ids = set(exclude_ids or [])
         difficulty_key = (difficulty or "Medium").lower()
         candidates = CodingProblem.query.filter(CodingProblem.difficulty == difficulty_key).order_by(CodingProblem.id.asc()).all()
+        candidates = [candidate for candidate in candidates if candidate.id not in exclude_ids]
 
         if company and company.lower() != "other":
             company_matches = [c for c in candidates if company.lower() in (c.company_tags or "").lower()]
@@ -62,14 +64,14 @@ class InterviewService:
 
         if role and not candidates:
             role_keywords = role.lower()
-            candidates = CodingProblem.query.filter(
+            candidates = [candidate for candidate in CodingProblem.query.filter(
                 (CodingProblem.topic.ilike(f"%{role_keywords}%")) |
                 (CodingProblem.company_tags.ilike(f"%{role_keywords}%"))
-            ).order_by(CodingProblem.id.asc()).all()
+            ).order_by(CodingProblem.id.asc()).all() if candidate.id not in exclude_ids]
 
         challenge = candidates[0] if candidates else None
         if not challenge:
-            challenge = CodingProblem.query.order_by(CodingProblem.id.asc()).first()
+            challenge = CodingProblem.query.filter(~CodingProblem.id.in_(exclude_ids)).order_by(CodingProblem.id.asc()).first() if exclude_ids else CodingProblem.query.order_by(CodingProblem.id.asc()).first()
         if not challenge:
             return None
 
@@ -81,6 +83,17 @@ class InterviewService:
             "challenge_slug": challenge.slug,
             "challenge_id": challenge.id,
         }
+
+    def _get_coding_challenges(self, difficulty, company, role, count):
+        """Select distinct coding challenges for a session's difficulty policy."""
+        challenges, used_ids = [], set()
+        for _ in range(count):
+            challenge = self._get_coding_challenge(difficulty, company, role, used_ids)
+            if not challenge:
+                break
+            challenges.append(challenge)
+            used_ids.add(challenge["challenge_id"])
+        return challenges
 
     def _insert_coding_challenge(self, queue, challenge, total_questions):
         if not challenge:
@@ -224,11 +237,15 @@ class InterviewService:
             raise ValueError("Please select or upload a valid resume before starting the interview.")
 
         total_questions = self.resolve_question_count(difficulty, total_questions)
-        challenge = self._get_coding_challenge(difficulty, company, role)
-        should_include_challenge = bool(challenge) and total_questions >= 5
+        difficulty_key = (difficulty or "").strip().lower()
+        # Coding-round policy: one challenge for Easy, two for Medium and Hard.
+        coding_count = 2 if difficulty_key in {"medium", "hard"} else 1 if difficulty_key == "easy" else 0
+        coding_count = min(coding_count, max(0, total_questions - 1))
+        challenges = self._get_coding_challenges(difficulty, company, role, coding_count) if coding_count else []
+        coding_count = len(challenges)
 
         queue = []
-        bank_target = total_questions - 1 if should_include_challenge else total_questions
+        bank_target = total_questions - coding_count
         if bank_target > 0:
             queue = self._bank_questions(role, interview_type, difficulty, bank_target, resume_based_questions)
 
@@ -265,7 +282,7 @@ class InterviewService:
                 if len(queue) >= bank_target:
                     break
 
-        if should_include_challenge and challenge:
+        for challenge in challenges:
             queue = self._insert_coding_challenge(queue, challenge, total_questions)
 
         if len(queue) < total_questions:
@@ -355,6 +372,23 @@ class InterviewService:
         if not active_turn or active_turn.candidate_answer is not None:
             raise ValueError("Active turn record not found.")
         active_turn.candidate_answer = answer.strip()
+        # Enforce the session policy even for sessions created before it: one
+        # Easy coding question, two for Medium and Hard.
+        difficulty_key = (session.difficulty or "").strip().lower()
+        allowed_coding = 2 if difficulty_key in {"medium", "hard"} else 1 if difficulty_key == "easy" else 0
+        completed_coding = InterviewTurn.query.filter_by(
+            session_id=session.id, question_type="Coding Challenge"
+        ).filter(InterviewTurn.candidate_answer.isnot(None)).count()
+        remaining_coding = max(0, allowed_coding - completed_coding)
+        queue = session.get_question_queue()
+        filtered_queue, retained_coding = [], 0
+        for item in queue:
+            if item.get("question_type") != "Coding Challenge":
+                filtered_queue.append(item)
+            elif retained_coding < remaining_coding:
+                filtered_queue.append(item)
+                retained_coding += 1
+        session.set_question_queue(filtered_queue)
         if session.current_question_no >= session.total_questions:
             db.session.commit()
             self.finalize_session(session.id)
