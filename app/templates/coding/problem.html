@@ -1,0 +1,1107 @@
+{% extends "base.html" %}
+{% block title %}{{ problem.title }} - Coding Challenge - CareerPilot AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .workspace-container {
+        height: calc(100vh - 120px);
+        min-height: 650px;
+    }
+    .problem-pane {
+        height: 100%;
+        overflow-y: auto;
+        border-right: 1px solid var(--card-border);
+    }
+    .editor-pane {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    #monaco-editor-container {
+        flex-grow: 1;
+        min-height: 380px;
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+    }
+    .console-drawer {
+        background: var(--input-bg);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius-md);
+        max-height: 260px;
+        overflow-y: auto;
+    }
+    .badge-easy { background-color: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-medium { background-color: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-hard { background-color: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+    
+    .testcase-pill {
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        color: var(--text-secondary);
+    }
+    .testcase-pill.active {
+        background: var(--primary-color);
+        color: #ffffff;
+        border-color: var(--primary-color);
+    }
+    .testcase-pill.passed {
+        border-color: #10b981;
+    }
+    .testcase-pill.failed {
+        border-color: #ef4444;
+    }
+    .code-block-box {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid var(--card-border);
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.85rem;
+        white-space: pre-wrap;
+    }
+    .btn-bookmark {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: var(--transition-smooth);
+    }
+    .btn-bookmark:hover, .btn-bookmark.active {
+        color: #f59e0b;
+        transform: scale(1.2);
+    }
+
+    /* Proctoring print safeguard */
+    @media print {
+        body {
+            display: none !important;
+        }
+    }
+    
+    /* Screen recording blur safeguard when blurred */
+    .proctor-blurred {
+        filter: blur(25px) grayscale(100%) !important;
+        pointer-events: none !important;
+        user-select: none !important;
+    }
+
+    /* Hide sidebar, navbar, and footer when in fullscreen proctor mode */
+    :fullscreen .sidebar-wrapper,
+    :fullscreen .navbar,
+    :fullscreen footer {
+        display: none !important;
+    }
+
+    /* Remove outer layout paddings/margins in fullscreen */
+    :fullscreen main {
+        padding: 1.5rem !important;
+        margin: 0 !important;
+        max-width: 100vw !important;
+        background: var(--body-bg) !important;
+    }
+
+    :fullscreen .workspace-container {
+        height: calc(100vh - 80px) !important;
+        max-height: calc(100vh - 80px) !important;
+        min-height: 500px !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Proctoring & Device Safegards Overlays -->
+<div id="desktopOnlyOverlay" class="d-none" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0f172a; z-index: 10005; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;">
+    <i class="fa-solid fa-desktop text-primary mb-3 animate__animated animate__pulse animate__infinite" style="font-size: 4rem;"></i>
+    <h2 class="fw-bold mb-2">Desktop Required</h2>
+    <p class="text-muted" style="max-width: 400px;">For proctoring compliance and editor usability, the coding arena is strictly restricted to desktop displays.</p>
+</div>
+
+<div id="proctorLobbyOverlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); z-index: 9999; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;">
+    <div class="glass-card p-5 border-primary text-center" style="max-width: 600px; background: rgba(30, 41, 59, 0.8);">
+        <i class="fa-solid fa-shield-halved text-warning mb-3" style="font-size: 3.5rem;"></i>
+        <h3 class="fw-bold mb-3">Entering Proctored Coding Environment</h3>
+        <p class="text-light small mb-4 text-start">
+            To ensure integrity, this workspace is governed by the following anti-cheat rules:
+            <br><br>
+            1. 📺 <strong>Fullscreen Enforcement</strong>: The challenge must be completed in fullscreen. Exiting will trigger a flag.
+            <br>
+            2. 🚫 <strong>Interception Blockers</strong>: Clipboard copy/paste and right-click context menus are disabled.
+            <br>
+            3. 📑 <strong>Focus Monitoring</strong>: Switching tabs, minimizing the window, or losing window focus is strictly prohibited.
+            <br>
+            4. 🎛️ <strong>Console Blocking</strong>: Developer tools (F12, inspection shortcuts) are intercepted.
+            <br><br>
+            <span class="text-warning">⚠️ Note: Reaching <strong>2 flags</strong> will disqualify you, deduct <strong>50 XP</strong>, and terminate the session.</span>
+        </p>
+        <button class="btn btn-warning btn-lg px-4" onclick="startProctoredChallenge()">
+            <i class="fa-solid fa-expand me-1"></i> Agree & Start Challenge
+        </button>
+    </div>
+</div>
+
+<div id="proctorViolationModal" class="d-none" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(220, 38, 38, 0.7); backdrop-filter: blur(8px); z-index: 10001; display: flex; align-items: center; justify-content: center; color: white;">
+    <div class="glass-card p-4 text-center border-danger" style="max-width: 450px; background: rgba(31, 41, 55, 0.95);">
+        <i class="fa-solid fa-triangle-exclamation text-danger fs-1 mb-3 animate__animated animate__flash animate__infinite"></i>
+        <h4 class="fw-bold text-danger mb-2">PROCTORING VIOLATION!</h4>
+        <p id="proctorViolationMsg" class="mb-4">Switching windows or tabs is flagged as a breach.</p>
+        <div class="alert alert-warning py-2 mb-3">
+            <strong class="fs-5" id="proctorFlagsCount">Flag 1 / 2</strong>
+        </div>
+        <p class="small text-muted mb-3">Next violation will terminate the session and deduct 50 XP.</p>
+        <button class="btn btn-danger btn-sm px-4" onclick="resumeChallenge()">Resume Challenge</button>
+    </div>
+</div>
+
+<div id="proctorDisqualifiedOverlay" class="d-none" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0f172a; z-index: 10002; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; padding: 20px;">
+    <i class="fa-solid fa-ban text-danger mb-3 animate__animated animate__zoomIn" style="font-size: 5rem;"></i>
+    <h2 class="fw-bold text-danger mb-2">DISQUALIFIED</h2>
+    <h4 class="mb-4">Session Terminated due to Proctoring Violations</h4>
+    <div class="p-3 bg-danger bg-opacity-10 rounded-3 mb-4 border border-danger border-opacity-25" style="max-width: 380px;">
+        <span class="fs-5 fw-bold text-danger">-50 XP Deducted</span>
+    </div>
+    <p class="text-muted small">Redirecting you back to the Problem Arena...</p>
+</div>
+
+<!-- Proctoring Exiting Transition Overlay -->
+<div id="proctorExitOverlay" class="d-none" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0f172a; z-index: 10006; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;">
+    <div class="spinner-border text-warning mb-3" style="width: 3rem; height: 3rem;" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <h3 class="fw-bold mb-2">Exiting Proctoring Mode</h3>
+    <p class="text-muted small">Saving session state and returning to catalog...</p>
+</div>
+
+<!-- Custom confirmation popup instead of native browser confirm() -->
+<div id="proctorConfirmModal" class="d-none" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(5px); z-index: 10003; display: flex; align-items: center; justify-content: center; color: white;">
+    <div class="glass-card p-4 text-center border-warning" style="max-width: 400px; background: rgba(31, 41, 55, 0.98);">
+        <i class="fa-solid fa-circle-question text-warning fs-1 mb-3"></i>
+        <h4 class="fw-bold mb-2">Reset Code?</h4>
+        <p class="mb-4 text-muted small">Are you sure you want to reset the editor to the default starter template? Current edits will be lost.</p>
+        <div class="d-flex justify-content-center gap-3">
+            <button class="btn btn-outline-secondary btn-sm px-3" onclick="closeConfirmModal()">Cancel</button>
+            <button class="btn btn-warning btn-sm px-3" onclick="confirmResetToStarterCode()">Yes, Reset</button>
+        </div>
+    </div>
+</div>
+
+<div id="workspaceWrapper" class="proctor-blurred">
+<!-- Workspace Navigation Bar -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex align-items-center gap-2">
+        <a href="{{ url_for('coding.index') }}" class="btn btn-outline-secondary btn-sm" onclick="exitProctoredWorkspace(event)">
+            <i class="fa-solid fa-arrow-left me-1"></i> Problems
+        </a>
+        <h5 class="fw-bold mb-0 ms-2">{{ problem.title }}</h5>
+        <span class="badge {% if problem.difficulty == 'easy' %}badge-easy{% elif problem.difficulty == 'medium' %}badge-medium{% else %}badge-hard{% endif %}">
+            {{ problem.difficulty|capitalize }}
+        </span>
+        <span class="badge bg-secondary bg-opacity-25 text-body fw-normal">{{ problem.topic }}</span>
+        <button type="button" class="btn-bookmark {% if problem.is_bookmarked %}active{% endif %} ms-2" data-problem-id="{{ problem.id }}" onclick="toggleBookmark(parseInt(this.dataset.problemId), this)" title="Bookmark Problem">
+            <i class="{% if problem.is_bookmarked %}fa-solid{% else %}fa-regular{% endif %} fa-star"></i>
+        </button>
+    </div>
+    
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-primary bg-opacity-25 text-primary py-2 px-3">
+            <i class="fa-solid fa-award me-1"></i> Reward: +{{ problem.xp_reward }} XP
+        </span>
+        {% if problem.user_status == 'Solved' %}
+            <span class="badge bg-success py-2 px-3">
+                <i class="fa-solid fa-check me-1"></i> Solved
+            </span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Main Split-Pane Workspace -->
+<div class="glass-card p-0 overflow-hidden workspace-container">
+    <div class="row g-0 h-100">
+        
+        <!-- Left Pane: Problem Details & Tabs -->
+        <div class="col-lg-5 problem-pane p-4">
+            <!-- Nav Tabs -->
+            <ul class="nav nav-pills mb-3 border-bottom pb-2" id="problemTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active btn-sm" id="desc-tab" data-bs-toggle="pill" data-bs-target="#desc-pane" type="button">
+                        <i class="fa-solid fa-file-lines me-1"></i> Description
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link btn-sm" id="submissions-tab" data-bs-toggle="pill" data-bs-target="#submissions-pane" type="button">
+                        <i class="fa-solid fa-clock-rotate-left me-1"></i> Submissions ({{ submissions|length }})
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="problemTabContent">
+                <!-- Description Tab -->
+                <div class="tab-pane fade show active" id="desc-pane">
+                    <!-- Problem Statement -->
+                    <div class="mb-4 text-body" style="white-space: pre-line; line-height: 1.6;">
+                        {{ problem.description }}
+                    </div>
+
+                    <!-- Examples / Sample Test Cases -->
+                    {% if problem.sample_test_cases %}
+                        <h6 class="fw-bold text-uppercase text-muted small mt-4 mb-3">Sample Examples</h6>
+                        {% for ex in problem.sample_test_cases %}
+                            <div class="card mb-3 bg-transparent border">
+                                <div class="card-header bg-transparent py-2 fw-semibold small">
+                                    Example {{ loop.index }}
+                                </div>
+                                <div class="card-body py-2">
+                                    <div class="small mb-1"><strong class="text-primary">Input:</strong></div>
+                                    <div class="code-block-box mb-2">{{ ex.input }}</div>
+                                    <div class="small mb-1"><strong class="text-success">Expected Output:</strong></div>
+                                    <div class="code-block-box mb-2">{{ ex.expected_output }}</div>
+                                    {% if ex.explanation %}
+                                        <div class="small text-muted"><strong>Explanation:</strong> {{ ex.explanation }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <!-- Input / Output Format -->
+                    {% if problem.input_format %}
+                        <h6 class="fw-bold text-uppercase text-muted small mt-4 mb-2">Input Format</h6>
+                        <p class="small text-body mb-3" style="white-space: pre-line;">{{ problem.input_format }}</p>
+                    {% endif %}
+                    
+                    {% if problem.output_format %}
+                        <h6 class="fw-bold text-uppercase text-muted small mt-3 mb-2">Output Format</h6>
+                        <p class="small text-body mb-3" style="white-space: pre-line;">{{ problem.output_format }}</p>
+                    {% endif %}
+
+                    <!-- Constraints -->
+                    {% if problem.constraints %}
+                        <h6 class="fw-bold text-uppercase text-muted small mt-4 mb-2">Constraints</h6>
+                        <div class="code-block-box mb-4">{{ problem.constraints }}</div>
+                    {% endif %}
+
+                    <!-- Company Tags -->
+                    {% if problem.company_tags %}
+                        <h6 class="fw-bold text-uppercase text-muted small mt-3 mb-2">Frequently Asked At</h6>
+                        <div class="d-flex flex-wrap gap-1 mb-4">
+                            {% for ctag in problem.company_tags %}
+                                <span class="badge bg-secondary bg-opacity-25 text-body fw-normal">{{ ctag }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Submissions Tab -->
+                <div class="tab-pane fade" id="submissions-pane">
+                    {% if submissions %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover align-middle">
+                                <thead>
+                                    <tr class="small text-muted">
+                                        <th>Status</th>
+                                        <th>Language</th>
+                                        <th>Runtime</th>
+                                        <th>Tests</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for sub in submissions %}
+                                        <tr>
+                                            <td>
+                                                {% if sub.status == 'Accepted' %}
+                                                    <span class="badge bg-success">Accepted</span>
+                                                {% elif sub.status == 'Wrong Answer' %}
+                                                    <span class="badge bg-danger">Wrong Answer</span>
+                                                {% elif sub.status == 'Time Limit Exceeded' %}
+                                                    <span class="badge bg-warning text-dark">TLE</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ sub.status }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="small">{{ sub.language|capitalize }}</td>
+                                            <td class="small">{{ sub.execution_time_ms }} ms</td>
+                                            <td class="small">{{ sub.passed_tests }}/{{ sub.total_tests }}</td>
+                                            <td class="small text-muted">{{ sub.submitted_at.split(' ')[0] if sub.submitted_at else '' }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-code fs-2 mb-2 d-block opacity-50"></i>
+                            <p class="small">No submissions yet for this problem.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Pane: Monaco Editor & Console -->
+        <div class="col-lg-7 editor-pane p-3 d-flex flex-column justify-content-between">
+            
+            <!-- Editor Toolbar -->
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <label class="small text-muted fw-semibold">Language:</label>
+                    <select id="languageSelect" class="form-select form-select-sm" style="width: 140px;" onchange="handleLanguageChange()">
+                        <option value="python">Python</option>
+                        <option value="javascript">JavaScript</option>
+                        <option value="java">Java</option>
+                        <option value="cpp">C++</option>
+                    </select>
+
+                    <button class="btn btn-outline-secondary btn-sm" onclick="resetToStarterCode()" title="Reset code to default template">
+                        <i class="fa-solid fa-rotate-left me-1"></i> Reset
+                    </button>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="toggleEditorTheme()" title="Toggle Dark/Light Editor Theme">
+                        <i class="fa-solid fa-circle-half-stroke" id="themeIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Monaco Editor Container -->
+            <div id="monaco-editor-container" class="mb-3"></div>
+
+            <!-- Console Drawer & Test Results -->
+            <div class="console-drawer p-3 mb-3" id="consoleDrawer">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-bold small text-uppercase text-muted"><i class="fa-solid fa-terminal me-1"></i> Test Console</span>
+                        <span id="runStatusBadge" class="badge bg-secondary d-none">Pending</span>
+                        <span id="runtimeBadge" class="small text-muted d-none">0 ms</span>
+                    </div>
+                    <div class="form-check form-switch small">
+                        <input class="form-check-input" type="checkbox" id="customInputToggle" onchange="toggleCustomInput()">
+                        <label class="form-check-label text-muted" for="customInputToggle">Custom Test Case</label>
+                    </div>
+                </div>
+
+                <!-- Custom Input Section (Hidden by default) -->
+                <div id="customInputSection" class="mb-2 d-none">
+                    <label class="small text-muted mb-1">Standard Input (stdin):</label>
+                    <textarea id="customInputText" class="form-control form-control-sm font-monospace" rows="3" placeholder="Enter input values here..."></textarea>
+                </div>
+
+                <!-- Test Case Tabs -->
+                <div id="testCasesContainer">
+                    <div class="d-flex gap-2 mb-2" id="testCaseNav">
+                        <!-- Populated dynamically -->
+                    </div>
+                    <div id="testCaseDetail" class="small">
+                        <div class="text-muted">Click "Run Code" to test your solution against sample cases.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons Footer -->
+            <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                <div class="small text-muted" id="editorStatus">
+                    Ready
+                </div>
+                <div class="d-flex gap-2">
+                    <button id="saveDraftBtn" class="btn btn-outline-secondary" onclick="saveCodeDraft()">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Save Draft
+                    </button>
+                    <button id="runBtn" class="btn btn-outline-primary" onclick="runCode()">
+                        <i class="fa-solid fa-play me-1"></i> Run Code
+                    </button>
+                    <button id="submitBtn" class="btn btn-success px-4 d-none" onclick="submitSolution()">
+                        <i class="fa-solid fa-cloud-arrow-up me-1"></i> Submit Solution
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+</div>
+
+<!-- Modal: Celebration on Accepted Submission -->
+<div class="modal fade" id="celebrationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card p-4 text-center border-success">
+            <div class="mb-3">
+                <i class="fa-solid fa-circle-check text-success fs-1 animate__animated animate__bounceIn"></i>
+            </div>
+            <h4 class="fw-bold text-success mb-1">Accepted!</h4>
+            <p class="text-muted mb-3" id="celebrationSummary">All test cases passed successfully.</p>
+            
+            <div class="p-3 bg-success bg-opacity-10 rounded-3 mb-3">
+                <div class="fs-5 fw-bold text-success" id="xpRewardText">+20 XP Earned</div>
+                <small class="text-muted" id="streakUpdateText">Daily streak maintained</small>
+            </div>
+
+            <div id="newBadgeAlert" class="alert alert-warning py-2 small d-none">
+                <i class="fa-solid fa-medal me-1"></i> <strong id="newBadgeName">Badge Unlocked!</strong>
+            </div>
+
+            <div class="d-flex justify-content-center gap-2 mt-2">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Keep Practicing</button>
+                <a href="{{ url_for('coding.index') }}" class="btn btn-primary" onclick="exitProctoredWorkspace(event)">Next Challenge</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Safe JSON data containers to prevent browser parsing errors -->
+<script type="application/json" id="problem-templates-json">
+    {{ problem.starter_templates|tojson|safe }}
+</script>
+<script type="application/json" id="sample-cases-json">
+    {{ problem.sample_test_cases|tojson|safe }}
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Monaco Editor Loader -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+
+<script>
+    const PROBLEM_SLUG = "{{ problem.slug }}";
+    const PROBLEM_TEMPLATES = JSON.parse(document.getElementById('problem-templates-json').textContent);
+    const SAMPLE_TEST_CASES = JSON.parse(document.getElementById('sample-cases-json').textContent);
+    
+    let editor = null;
+    let currentLanguage = 'python';
+    let isDarkTheme = true;
+    let testResultsData = [];
+
+    // Monaco Editor Initialization
+    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
+    require(['vs/editor/editor.main'], function () {
+        const savedLang = localStorage.getItem(`careerpilot_lang_${PROBLEM_SLUG}`) || 'python';
+        currentLanguage = savedLang;
+        document.getElementById('languageSelect').value = currentLanguage;
+
+        const initialCode = getSavedOrStarterCode(currentLanguage);
+
+        editor = monaco.editor.create(document.getElementById('monaco-editor-container'), {
+            value: initialCode,
+            language: mapMonacoLanguage(currentLanguage),
+            theme: isDarkTheme ? 'vs-dark' : 'vs',
+            automaticLayout: true,
+            fontSize: 14,
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
+            lineNumbers: 'on',
+            tabSize: 4,
+            renderWhitespace: 'selection',
+            contextmenu: false
+        });
+
+        // Intercept clipboard events inside Monaco Editor's textarea
+        const editorTextArea = document.getElementById('monaco-editor-container').querySelector('textarea');
+        if (editorTextArea) {
+            editorTextArea.addEventListener('copy', (e) => {
+                if (isChallengeStarted) {
+                    e.preventDefault();
+                    triggerProctorViolation("Copy action inside editor");
+                }
+            });
+            editorTextArea.addEventListener('paste', (e) => {
+                if (isChallengeStarted) {
+                    e.preventDefault();
+                    triggerProctorViolation("Paste action inside editor");
+                }
+            });
+            editorTextArea.addEventListener('cut', (e) => {
+                if (isChallengeStarted) {
+                    e.preventDefault();
+                    triggerProctorViolation("Cut action inside editor");
+                }
+            });
+        }
+
+        // Auto-save user code on keystroke
+        editor.onDidChangeModelContent(() => {
+            const currentCode = editor.getValue();
+            localStorage.setItem(`careerpilot_code_${PROBLEM_SLUG}_${currentLanguage}`, currentCode);
+            document.getElementById('editorStatus').innerText = 'Saved';
+        });
+
+        renderSampleTestNav();
+    });
+
+    function mapMonacoLanguage(lang) {
+        if (lang === 'python') return 'python';
+        if (lang === 'javascript') return 'javascript';
+        if (lang === 'java') return 'java';
+        if (lang === 'cpp') return 'cpp';
+        return 'plaintext';
+    }
+
+    function getSavedOrStarterCode(lang) {
+        const saved = localStorage.getItem(`careerpilot_code_${PROBLEM_SLUG}_${lang}`);
+        if (saved) return saved;
+        return PROBLEM_TEMPLATES[lang] || '';
+    }
+
+    function handleLanguageChange() {
+        const newLang = document.getElementById('languageSelect').value;
+        currentLanguage = newLang;
+        localStorage.setItem(`careerpilot_lang_${PROBLEM_SLUG}`, newLang);
+
+        const newCode = getSavedOrStarterCode(newLang);
+        if (editor) {
+            editor.setValue(newCode);
+            monaco.editor.setModelLanguage(editor.getModel(), mapMonacoLanguage(newLang));
+        }
+    }
+
+    function resetToStarterCode() {
+        // Open custom reset confirm modal
+        document.getElementById('proctorConfirmModal').classList.remove('d-none');
+        document.getElementById('workspaceWrapper').classList.add('proctor-blurred');
+        // Unbind window blur during confirmation modal to prevent accidental flags
+        window.removeEventListener('blur', handleWindowBlur);
+    }
+
+    function closeConfirmModal() {
+        document.getElementById('proctorConfirmModal').classList.add('d-none');
+        document.getElementById('workspaceWrapper').classList.remove('proctor-blurred');
+        // Re-bind window blur listener
+        setTimeout(() => {
+            if (isChallengeStarted) {
+                window.addEventListener('blur', handleWindowBlur);
+            }
+        }, 100);
+    }
+
+    function confirmResetToStarterCode() {
+        const starter = PROBLEM_TEMPLATES[currentLanguage] || '';
+        if (editor) {
+            editor.setValue(starter);
+            localStorage.setItem(`careerpilot_code_${PROBLEM_SLUG}_${currentLanguage}`, starter);
+        }
+        closeConfirmModal();
+    }
+
+    function toggleEditorTheme() {
+        isDarkTheme = !isDarkTheme;
+        if (editor) {
+            monaco.editor.setTheme(isDarkTheme ? 'vs-dark' : 'vs');
+        }
+    }
+
+    function toggleCustomInput() {
+        const checked = document.getElementById('customInputToggle').checked;
+        const section = document.getElementById('customInputSection');
+        if (checked) {
+            section.classList.remove('d-none');
+        } else {
+            section.classList.add('d-none');
+        }
+    }
+
+    function renderSampleTestNav() {
+        const nav = document.getElementById('testCaseNav');
+        nav.innerHTML = '';
+        SAMPLE_TEST_CASES.forEach((tc, idx) => {
+            const pill = document.createElement('button');
+            pill.className = `testcase-pill ${idx === 0 ? 'active' : ''}`;
+            pill.innerText = `Case ${idx + 1}`;
+            pill.onclick = () => selectTestCase(idx);
+            nav.appendChild(pill);
+        });
+        if (SAMPLE_TEST_CASES.length > 0) {
+            selectTestCase(0);
+        }
+    }
+
+    function selectTestCase(idx) {
+        const pills = document.querySelectorAll('.testcase-pill');
+        pills.forEach((p, i) => {
+            p.classList.toggle('active', i === idx);
+        });
+
+        const detail = document.getElementById('testCaseDetail');
+        if (testResultsData && testResultsData.length > idx) {
+            const tr = testResultsData[idx];
+            detail.innerHTML = `
+                <div class="mb-2"><strong>Status:</strong> <span class="${tr.passed ? 'text-success' : 'text-danger'}">${tr.status}</span> (${tr.execution_time_ms || 0} ms)</div>
+                ${tr.input !== null ? `<div class="mb-1 text-muted">Input:</div><div class="code-block-box mb-2">${escapeHtml(tr.input)}</div>` : ''}
+                ${tr.expected_output !== null ? `<div class="mb-1 text-muted">Expected Output:</div><div class="code-block-box mb-2">${escapeHtml(tr.expected_output)}</div>` : ''}
+                ${tr.actual_output !== null ? `<div class="mb-1 text-muted">Your Output:</div><div class="code-block-box mb-2">${escapeHtml(tr.actual_output)}</div>` : ''}
+                ${tr.error ? `<div class="mb-1 text-danger">Error / Log:</div><div class="code-block-box text-danger">${escapeHtml(tr.error)}</div>` : ''}
+            `;
+        } else if (SAMPLE_TEST_CASES.length > idx) {
+            const tc = SAMPLE_TEST_CASES[idx];
+            detail.innerHTML = `
+                <div class="mb-1 text-muted">Input:</div>
+                <div class="code-block-box mb-2">${escapeHtml(tc.input)}</div>
+                <div class="mb-1 text-muted">Expected Output:</div>
+                <div class="code-block-box mb-2">${escapeHtml(tc.expected_output)}</div>
+                ${tc.explanation ? `<div class="text-muted"><strong>Explanation:</strong> ${escapeHtml(tc.explanation)}</div>` : ''}
+            `;
+        }
+    }
+
+    function runCode() {
+        const runBtn = document.getElementById('runBtn');
+        const code = editor.getValue();
+        const customInputChecked = document.getElementById('customInputToggle').checked;
+        const customInput = customInputChecked ? document.getElementById('customInputText').value : null;
+
+        runBtn.disabled = true;
+        runBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Running...`;
+        document.getElementById('editorStatus').innerText = 'Executing tests...';
+
+        fetch("{{ url_for('coding.api_run_code') }}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token() if csrf_token else '' }}"
+            },
+            body: JSON.stringify({
+                slug: PROBLEM_SLUG,
+                language: currentLanguage,
+                code: code,
+                custom_input: customInput
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            runBtn.disabled = false;
+            runBtn.innerHTML = `<i class="fa-solid fa-play me-1"></i> Run Code`;
+            document.getElementById('editorStatus').innerText = 'Ready';
+
+            // Show submit solution button ONLY if all test cases passed successfully and it's not a custom input
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn) {
+                if (!data.is_custom && (data.status === 'Accepted' || data.status === 'Success') && data.passed_tests === data.total_tests) {
+                    submitBtn.classList.remove('d-none');
+                } else {
+                    submitBtn.classList.add('d-none');
+                }
+            }
+
+            const statusBadge = document.getElementById('runStatusBadge');
+            const runtimeBadge = document.getElementById('runtimeBadge');
+            statusBadge.classList.remove('d-none', 'bg-success', 'bg-danger', 'bg-warning', 'bg-secondary');
+            runtimeBadge.classList.remove('d-none');
+            
+            if (data.status === 'Accepted' || data.status === 'Success') {
+                statusBadge.className = 'badge bg-success';
+                statusBadge.innerText = data.status;
+            } else if (data.status === 'Wrong Answer') {
+                statusBadge.className = 'badge bg-danger';
+                statusBadge.innerText = 'Wrong Answer';
+            } else {
+                statusBadge.className = 'badge bg-warning text-dark';
+                statusBadge.innerText = data.status || 'Error';
+            }
+
+            runtimeBadge.innerText = `${data.execution_time_ms || 0} ms`;
+
+            testResultsData = data.test_results || [];
+            updateTestPills();
+            selectTestCase(0);
+        })
+        .catch(err => {
+            runBtn.disabled = false;
+            runBtn.innerHTML = `<i class="fa-solid fa-play me-1"></i> Run Code`;
+            document.getElementById('editorStatus').innerText = 'Error running code';
+            alert("Error running code: " + err);
+        });
+    }
+
+    function submitSolution() {
+        const submitBtn = document.getElementById('submitBtn');
+        const code = editor.getValue();
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Grading...`;
+        document.getElementById('editorStatus').innerText = 'Evaluating against test suite...';
+
+        fetch("{{ url_for('coding.api_submit_solution') }}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token() if csrf_token else '' }}"
+            },
+            body: JSON.stringify({
+                slug: PROBLEM_SLUG,
+                language: currentLanguage,
+                code: code
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up me-1"></i> Submit Solution`;
+            document.getElementById('editorStatus').innerText = 'Grading complete';
+
+            const statusBadge = document.getElementById('runStatusBadge');
+            const runtimeBadge = document.getElementById('runtimeBadge');
+            statusBadge.classList.remove('d-none', 'bg-success', 'bg-danger', 'bg-warning', 'bg-secondary');
+            runtimeBadge.classList.remove('d-none');
+
+            if (data.status === 'Accepted') {
+                statusBadge.className = 'badge bg-success';
+                statusBadge.innerText = `Accepted (${data.passed_tests}/${data.total_tests})`;
+
+                // Show Celebration Modal
+                document.getElementById('celebrationSummary').innerText = `Passed all ${data.total_tests} test cases in ${data.execution_time_ms} ms.`;
+                document.getElementById('xpRewardText').innerText = `+${data.xp_earned || 20} XP Earned`;
+                
+                if (data.unlocked_badges && data.unlocked_badges.length > 0) {
+                    const badgeAlert = document.getElementById('newBadgeAlert');
+                    badgeAlert.classList.remove('d-none');
+                    document.getElementById('newBadgeName').innerText = `Badge Unlocked: ${data.unlocked_badges[0].name}!`;
+                }
+
+                const modal = new bootstrap.Modal(document.getElementById('celebrationModal'));
+                modal.show();
+
+            } else {
+                statusBadge.className = 'badge bg-danger';
+                statusBadge.innerText = `${data.status} (${data.passed_tests}/${data.total_tests} Passed)`;
+            }
+
+            runtimeBadge.innerText = `${data.execution_time_ms || 0} ms`;
+
+            testResultsData = data.test_results || [];
+            updateTestPills();
+            selectTestCase(0);
+        })
+        .catch(err => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up me-1"></i> Submit Solution`;
+            document.getElementById('editorStatus').innerText = 'Error submitting';
+            alert("Error submitting solution: " + err);
+        });
+    }
+
+    function updateTestPills() {
+        const nav = document.getElementById('testCaseNav');
+        nav.innerHTML = '';
+        testResultsData.forEach((tr, idx) => {
+            const pill = document.createElement('button');
+            pill.className = `testcase-pill ${tr.passed ? 'passed' : 'failed'} ${idx === 0 ? 'active' : ''}`;
+            pill.innerHTML = `${tr.is_sample ? 'Sample ' : 'Test '}${idx + 1} <i class="fa-solid ${tr.passed ? 'fa-check text-success' : 'fa-xmark text-danger'} ms-1"></i>`;
+            pill.onclick = () => selectTestCase(idx);
+            nav.appendChild(pill);
+        });
+    }
+
+    function toggleBookmark(problemId, btnElement) {
+        fetch("{{ url_for('coding.api_toggle_bookmark') }}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token() if csrf_token else '' }}"
+            },
+            body: JSON.stringify({ problem_id: problemId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.is_bookmarked) {
+                btnElement.classList.add('active');
+                btnElement.querySelector('i').className = 'fa-solid fa-star';
+            } else {
+                btnElement.classList.remove('active');
+                btnElement.querySelector('i').className = 'fa-regular fa-star';
+            }
+        });
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    // Proctoring & Anti-Cheat Suite
+    let proctorFlags = 0;
+    let isChallengeStarted = false;
+    let proctorCheckInterval = null;
+
+    // Mobile/Tablet device check:
+    function checkDeviceConstraint() {
+        const isMobile = window.innerWidth < 992 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile) {
+            document.getElementById('desktopOnlyOverlay').classList.remove('d-none');
+            // If already started, force quit
+            if (isChallengeStarted) {
+                disqualifyUser("Mobile device detected");
+            }
+        } else {
+            document.getElementById('desktopOnlyOverlay').classList.add('d-none');
+        }
+    }
+
+    // Run device check on load and resize
+    window.addEventListener('resize', checkDeviceConstraint);
+    document.addEventListener('DOMContentLoaded', checkDeviceConstraint);
+
+    function startProctoredChallenge() {
+        // Must request fullscreen
+        const docEl = document.documentElement;
+        const requestFS = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
+        
+        if (requestFS) {
+            requestFS.call(docEl)
+                .then(() => {
+                    document.getElementById('proctorLobbyOverlay').classList.add('d-none');
+                    document.getElementById('workspaceWrapper').classList.remove('proctor-blurred');
+                    isChallengeStarted = true;
+                    
+                    // Activate blockers & watchers
+                    initProctorBlockers();
+                })
+                .catch(err => {
+                    alert("Fullscreen is required to start the proctored challenge. Please try again.");
+                });
+        } else {
+            alert("Your browser does not support fullscreen mode, which is required for this proctored challenge.");
+        }
+    }
+
+    function initProctorBlockers() {
+        // 1. Disable Right-click context menu
+        document.addEventListener('contextmenu', preventDefaultAction);
+
+        // 2. Disable copy, paste, cut
+        document.addEventListener('copy', preventDefaultAction);
+        document.addEventListener('paste', preventDefaultAction);
+        document.addEventListener('cut', preventDefaultAction);
+
+        // 3. Monitor Fullscreen Exits
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+        // 4. Intercept Keyboard Shortcuts (F12, Ctrl+Shift+I/J/C, Ctrl+U)
+        window.addEventListener('keydown', handleKeyShortcuts);
+
+        // 5. Visibility and Window Focus Loss Monitoring (switching tabs/windows)
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('blur', handleWindowBlur);
+
+        // 6. Timing assertions for DevTools timing loop detection
+        startConsoleTimingMonitor();
+    }
+
+    function preventDefaultAction(e) {
+        e.preventDefault();
+        return false;
+    }
+
+    function handleFullscreenChange() {
+        if (!isChallengeStarted) return;
+        const fsDoc = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+        if (!fsDoc) {
+            triggerProctorViolation("Exited fullscreen mode");
+        }
+    }
+
+    function handleKeyShortcuts(e) {
+        // F12
+        if (e.keyCode === 123) {
+            e.preventDefault();
+            triggerProctorViolation("DevTools Shortcut Pressed (F12)");
+            return false;
+        }
+        // Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
+        if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) {
+            e.preventDefault();
+            triggerProctorViolation("DevTools Shortcut Pressed (Inspect)");
+            return false;
+        }
+        // Ctrl+U (View Source)
+        if (e.ctrlKey && e.keyCode === 85) {
+            e.preventDefault();
+            triggerProctorViolation("View Source Shortcut Pressed");
+            return false;
+        }
+    }
+
+    function handleVisibilityChange() {
+        if (!isChallengeStarted) return;
+        if (document.hidden) {
+            triggerProctorViolation("Tab switched / minimized window");
+        }
+    }
+
+    function handleWindowBlur() {
+        if (!isChallengeStarted) return;
+        // Check if there is an active violation modal open or celebration modal open
+        const violationModal = document.getElementById('proctorViolationModal');
+        if (violationModal.classList.contains('d-none')) {
+            triggerProctorViolation("Focus lost (clicked outside window)");
+        }
+    }
+
+    function startConsoleTimingMonitor() {
+        // Detects if Console is open by monitoring execution latency of `debugger;` assertions
+        proctorCheckInterval = setInterval(function() {
+            if (!isChallengeStarted) return;
+            const start = performance.now();
+            debugger;
+            const elapsed = performance.now() - start;
+            if (elapsed > 100) {
+                triggerProctorViolation("Debugger / Developer console detected");
+            }
+        }, 1500);
+    }
+
+    function triggerProctorViolation(reason) {
+        if (!isChallengeStarted) return;
+        proctorFlags += 1;
+        
+        // Hide standard window blur/visibility triggers temporarily to prevent infinite loops while alerting
+        window.removeEventListener('blur', handleWindowBlur);
+
+        if (proctorFlags >= 2) {
+            disqualifyUser(reason);
+        } else {
+            // Show warning modal
+            document.getElementById('proctorViolationMsg').innerText = `Violation detected: ${reason}. Please stay on the page.`;
+            document.getElementById('proctorFlagsCount').innerText = `Flag ${proctorFlags} / 2`;
+            document.getElementById('proctorViolationModal').classList.remove('d-none');
+            
+            // Blur the workspace content under the alert overlay
+            document.getElementById('workspaceWrapper').classList.add('proctor-blurred');
+        }
+    }
+
+    function resumeChallenge() {
+        // Put fullscreen back on if they exited
+        const docEl = document.documentElement;
+        const requestFS = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
+        
+        const goFullscreen = () => {
+            document.getElementById('proctorViolationModal').classList.add('d-none');
+            document.getElementById('workspaceWrapper').classList.remove('proctor-blurred');
+            
+            // Re-bind focus check after small timeout
+            setTimeout(() => {
+                window.addEventListener('blur', handleWindowBlur);
+            }, 500);
+        };
+
+        if (requestFS && !document.fullscreenElement) {
+            requestFS.call(docEl).then(goFullscreen).catch(() => {
+                alert("Fullscreen is required to resume the challenge.");
+            });
+        } else {
+            goFullscreen();
+        }
+    }
+
+    function disqualifyUser(reason) {
+        isChallengeStarted = false;
+        clearInterval(proctorCheckInterval);
+        
+        // Hide warning modal if visible
+        document.getElementById('proctorViolationModal').classList.add('d-none');
+        // Show disqualified screen
+        document.getElementById('proctorDisqualifiedOverlay').classList.remove('d-none');
+        
+        // Clean up event listeners
+        document.removeEventListener('contextmenu', preventDefaultAction);
+        document.removeEventListener('copy', preventDefaultAction);
+        document.removeEventListener('paste', preventDefaultAction);
+        document.removeEventListener('cut', preventDefaultAction);
+        window.removeEventListener('keydown', handleKeyShortcuts);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('blur', handleWindowBlur);
+
+        // Call backend API to deduct XP
+        fetch("{{ url_for('coding.api_proctor_penalty') }}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token() if csrf_token else '' }}"
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            console.log("XP penalty applied:", data);
+            // Redirect after 3 seconds
+            setTimeout(() => {
+                window.location.href = "{{ url_for('coding.index') }}";
+            }, 3000);
+        })
+        .catch(err => {
+            console.error("Error applying penalty:", err);
+            setTimeout(() => {
+                window.location.href = "{{ url_for('coding.index') }}";
+            }, 3000);
+        });
+    }
+
+    function exitProctoredWorkspace(e) {
+        if (e) {
+            e.preventDefault();
+        }
+        
+        // Show exiting screen immediately
+        document.getElementById('proctorExitOverlay').classList.remove('d-none');
+        document.getElementById('workspaceWrapper').classList.add('proctor-blurred');
+        
+        isChallengeStarted = false;
+        clearInterval(proctorCheckInterval);
+        
+        // Clean up event listeners to prevent any pending blur triggers during unload
+        document.removeEventListener('contextmenu', preventDefaultAction);
+        document.removeEventListener('copy', preventDefaultAction);
+        document.removeEventListener('paste', preventDefaultAction);
+        document.removeEventListener('cut', preventDefaultAction);
+        window.removeEventListener('keydown', handleKeyShortcuts);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('blur', handleWindowBlur);
+
+        const targetUrl = "{{ url_for('coding.index') }}";
+
+        if (document.fullscreenElement) {
+            document.exitFullscreen()
+                .then(() => {
+                    setTimeout(() => {
+                        window.location.href = targetUrl;
+                    }, 500);
+                })
+                .catch(() => {
+                    window.location.href = targetUrl;
+                });
+        } else {
+            setTimeout(() => {
+                window.location.href = targetUrl;
+            }, 500);
+        }
+    }
+
+    function saveCodeDraft() {
+        if (!editor) return;
+        const code = editor.getValue();
+        localStorage.setItem(`careerpilot_code_${PROBLEM_SLUG}_${currentLanguage}`, code);
+        
+        // Visual feedback on button
+        const btn = document.getElementById('saveDraftBtn');
+        const origHtml = btn.innerHTML;
+        btn.innerHTML = `<i class="fa-solid fa-check text-success me-1"></i> Saved!`;
+        btn.style.borderColor = "#28a745";
+        btn.style.color = "#28a745";
+        setTimeout(() => {
+            btn.innerHTML = origHtml;
+            btn.style.borderColor = "";
+            btn.style.color = "";
+        }, 1500);
+    }
+</script>
+{% endblock %}

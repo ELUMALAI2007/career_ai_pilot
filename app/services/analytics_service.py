@@ -19,7 +19,7 @@ from app.models.aptitude import (
 )
 from app.models.coding import CodingSubmission, CodingProblem
 from app.models.communication import CommunicationAssessment
-from app.models.interview import MockInterview, InterviewQuestion, InterviewFeedback
+from app.models.interview import InterviewSession
 from app.models.resume import ResumeUpload, ResumeAnalysis
 from app.models.skill_gap import SkillAssessment, TargetRole, SkillGapReport
 from app.models.learning_roadmap import Roadmap, RoadmapMilestone
@@ -27,7 +27,7 @@ from app.models.job_eligibility import JobRequirement, EligibilityCriteria
 from app.models.company_prep import CompanyProfile
 from app.models.planner import StudyPlan, StudyTask
 from app.models.analytics import UserAnalytics, MetricSnapshot
-
+from app.models.interview import InterviewSession, InterviewQuestion, InterviewTurn
 
 class AnalyticsService:
     """Master Analytics Engine powering CareerPilot AI Placement Intelligence."""
@@ -303,7 +303,7 @@ class AnalyticsService:
     @classmethod
     def _compute_interview_metrics(cls, user_id: int) -> Dict[str, Any]:
         """Aggregates mock interview session scores and evaluation feedback."""
-        interviews = MockInterview.query.filter_by(user_id=user_id).all()
+        interviews = InterviewSession.query.filter_by(user_id=user_id).all()
 
         if not interviews:
             return {
@@ -314,7 +314,10 @@ class AnalyticsService:
                 "avg_communication_score": 0.0
             }
 
-        completed = [i for i in interviews if i.status == 'Completed' or i.overall_score > 0]
+        completed = [
+    i for i in interviews
+    if i.status == 'Completed' and i.overall_score is not None
+]
         if not completed:
             return {
                 "status": "Insufficient Data",

@@ -6,6 +6,7 @@ Extracts raw text, structured sections, contact metadata, and calculates complet
 import os
 import re
 from typing import Dict, Any, List, Tuple
+
 try:
     from pypdf import PdfReader
 except ImportError:
@@ -13,6 +14,8 @@ except ImportError:
         from PyPDF2 import PdfReader
     except ImportError:
         PdfReader = None
+
+from docx import Document
 from docx import Document
 
 

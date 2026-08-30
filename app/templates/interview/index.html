@@ -1,38 +1,284 @@
 {% extends "base.html" %}
 {% block title %}AI Mock Interview - CareerPilot AI{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2 class="fw-bold mb-1"><i class="fa-solid fa-headset text-primary me-2"></i> AI Mock Interview Simulator</h2>
-        <p class="text-muted mb-0">Simulate realistic technical and behavioral interview sessions powered by Gemini LLM.</p>
+<div id="interview-loading-screen" class="position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center" style="background: rgba(10, 14, 28, 0.78); z-index: 9999; backdrop-filter: blur(4px);">
+    <div class="glass-card p-4 text-center" style="min-width: 320px; max-width: 420px; border-radius: 20px;">
+        <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h4 class="fw-bold mb-2 text-white">Setting up your interview</h4>
+        <p class="text-secondary mb-0">Preparing your questions, resume context, and live interview room...</p>
     </div>
 </div>
 
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="glass-card p-4 p-md-5">
-            <h4 class="fw-bold mb-4">Start New Interview Session</h4>
-            <form method="POST">
-                {{ form.hidden_tag() if form }}
-                <div class="mb-3">
-                    <label class="form-label text-muted">Target Role</label>
-                    <input type="text" name="target_role" class="form-control bg-dark text-white border-secondary" placeholder="e.g. Software Development Engineer" required>
+<div class="container py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="glass-card p-4 text-center text-md-start d-md-flex align-items-center justify-content-between">
+                <div>
+                    <h2 class="fw-bold text-primary mb-1"><i class="fa-solid fa-headset me-2"></i> AI Mock Interview</h2>
+                    <p class="text-secondary mb-0">Simulate realistic, professional, and personalized interview scenarios powered by AI.</p>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label text-muted">Target Company (Optional)</label>
-                    <input type="text" name="target_company" class="form-control bg-dark text-white border-secondary" placeholder="e.g. Google, Amazon, TCS">
+                <div class="mt-3 mt-md-0">
+                    <span class="badge bg-indigo-subtle text-indigo px-3 py-2 rounded-pill"><i class="fa-solid fa-circle-nodes"></i> Real-time Evaluation</span>
                 </div>
-                <div class="mb-4">
-                    <label class="form-label text-muted">Difficulty Level</label>
-                    <select name="difficulty" class="form-select bg-dark text-white border-secondary">
-                        <option value="junior">Junior / Entry Level</option>
-                        <option value="mid" selected>Mid Level</option>
-                        <option value="senior">Senior Level</option>
-                    </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="row g-4">
+        <!-- Interview Setup Form -->
+        <div class="col-lg-5">
+            <div class="glass-card p-4">
+                <h4 class="fw-bold mb-4"><i class="fa-solid fa-sliders text-primary me-2"></i> Setup Interview</h4>
+                
+                <form action="{{ url_for('interview.index') }}" method="POST" enctype="multipart/form-data" id="setupForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <!-- Resume Upload / Selection -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold"><i class="fa-solid fa-file-pdf text-danger me-1"></i> Resume Reference</label>
+                        {% if user_resumes %}
+                        <div class="mb-2">
+                            <select class="form-select bg-dark-subtle" name="resume_id" id="resumeSelect">
+                                <option value="">-- Choose Existing Resume --</option>
+                                {% for res in user_resumes %}
+                                <option value="{{ res.id }}" {% if loop.first %}selected{% endif %}>{{ res.filename }} (v{{ res.version_number }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="text-center text-muted my-2 small">- OR -</div>
+                        {% endif %}
+                        <div>
+                            <input type="file" class="form-control" name="resume_file" id="resumeFile" accept=".pdf,.docx">
+                            <div class="form-text">Supported formats: PDF, DOCX (Max 50MB)</div>
+                        </div>
+                        <div id="resume-warning" class="text-danger mt-2 small d-none">
+                            <i class="fa-solid fa-circle-exclamation"></i> You must select or upload a resume to begin.
+                        </div>
+                    </div>
+
+                    <!-- Role Selector -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold"><i class="fa-solid fa-briefcase text-secondary me-1"></i> Target Role</label>
+                        <select class="form-select" name="target_role" required>
+                            {% for r in roles %}
+                            <option value="{{ r }}">{{ r }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Interview Type -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold"><i class="fa-solid fa-tags text-secondary me-1"></i> Interview Type</label>
+                        <select class="form-select" name="interview_type" id="interviewTypeSelect" required>
+                            <option value="Technical" selected>Technical Round</option>
+                            <option value="HR / Behavioral">HR / Behavioral Round</option>
+                            <option value="Mixed">Mixed (Technical & HR)</option>
+                        </select>
+                    </div>
+
+                    <!-- Difficulty -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold"><i class="fa-solid fa-gauge text-secondary me-1"></i> Difficulty</label>
+                        <select class="form-select" name="difficulty" id="difficultySelect" required>
+                            <option value="Easy">Easy</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="Hard">Hard</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold"><i class="fa-solid fa-list-ol text-secondary me-1"></i> Interview length</label>
+                        <select class="form-select" name="total_questions" id="questionCountSelect">
+                            <option value="10">10 questions</option>
+                            <option value="15" selected>15 questions</option>
+                            <option value="20">20 questions</option>
+                            <option value="25">25 questions</option>
+                            <option value="30">30 questions</option>
+                        </select>
+                        <div class="form-text">Choose a longer interview for a broader, more reliable assessment.</div>
+                    </div>
+
+                    <!-- Company Selector -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold"><i class="fa-solid fa-building text-secondary me-1"></i> Target Company</label>
+                        <select class="form-select" name="target_company" required>
+                            {% for c in companies %}
+                            <option value="{{ c }}" {% if c == "Google" %}selected{% endif %}>{{ c }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="alert alert-secondary small mb-4">
+                        <i class="fa-solid fa-circle-info me-2"></i>
+                        Recommended defaults: 10 questions for Easy, 15 for Medium, and 20 for Hard. You can adjust this to suit your practice time.
+                    </div>
+
+                    <!-- Resume Questions Preference -->
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="resume_based_questions" name="resume_based_questions" checked>
+                            <label class="form-check-label fw-semibold" for="resume_based_questions">
+                                Ask questions based on my resume
+                            </label>
+                        </div>
+                        <div class="form-text">If enabled, the AI will ask projects, experience, and skills questions verified directly from your resume context.</div>
+                    </div>
+
+                    <!-- Start Button -->
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" id="startBtn">
+                        <i class="fa-solid fa-play me-2"></i> Start AI Interview
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- History Dashboard -->
+        <div class="col-lg-7">
+            <div class="glass-card p-4 h-100">
+                <h4 class="fw-bold mb-4"><i class="fa-solid fa-clock-rotate-left text-primary me-2"></i> Interview History</h4>
+                
+                {% if history %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Role</th>
+                                <th>Type</th>
+                                <th class="text-center">Score</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for session in history %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ session.role }}</div>
+                                    <small class="text-muted"><i class="fa-solid fa-building me-1"></i> {{ session.company or 'General' }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary">{{ session.interview_type }}</span>
+                                </td>
+                                <td class="text-center">
+                                    {% if session.status == 'Completed' %}
+                                    <div class="fw-bold text-success">{{ session.overall_score | int }}%</div>
+                                    {% else %}
+                                    <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if session.status == 'Completed' %}
+                                    <span class="badge bg-success-subtle text-success"><i class="fa-solid fa-circle-check me-1"></i> Completed</span>
+                                    {% else %}
+                                    <span class="badge bg-warning-subtle text-warning"><i class="fa-solid fa-spinner fa-spin me-1"></i> In Progress</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ session.created_at.strftime('%b %d, %Y') }}</small>
+                                </td>
+                                <td class="text-end">
+                                    {% if session.status == 'Completed' %}
+                                    <a href="{{ url_for('interview.report', session_id=session.id) }}" class="btn btn-sm btn-outline-primary fw-semibold">
+                                        <i class="fa-solid fa-file-invoice"></i> Report
+                                    </a>
+                                    {% else %}
+                                    <a href="{{ url_for('interview.session', session_id=session.id) }}" class="btn btn-sm btn-warning fw-semibold">
+                                        <i class="fa-solid fa-circle-play"></i> Resume
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                <button type="submit" class="btn btn-primary-custom w-100">Launch AI Interview</button>
-            </form>
+                {% else %}
+                <div class="text-center py-5">
+                    <div class="display-1 text-muted mb-4"><i class="fa-solid fa-folder-open"></i></div>
+                    <h5>No interviews taken yet</h5>
+                    <p class="text-muted">Configure and start your first AI mock interview session on the left panel!</p>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
+
+<style>
+    /* Premium custom styling rules for setup dashboard */
+    .bg-indigo-subtle {
+        background-color: rgba(99, 102, 241, 0.15);
+    }
+    .text-indigo {
+        color: #818cf8;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const setupForm = document.getElementById("setupForm");
+        const resumeSelect = document.getElementById("resumeSelect");
+        const resumeFile = document.getElementById("resumeFile");
+        const startBtn = document.getElementById("startBtn");
+        const warning = document.getElementById("resume-warning");
+        const loadingScreen = document.getElementById("interview-loading-screen");
+
+        function validateResume() {
+            const hasSelect = resumeSelect ? resumeSelect.value !== "" : false;
+            const hasFile = resumeFile.files.length > 0;
+
+            if (hasSelect || hasFile) {
+                startBtn.disabled = false;
+                warning.classList.add("d-none");
+            } else {
+                startBtn.disabled = true;
+                warning.classList.remove("d-none");
+            }
+        }
+
+        if (resumeSelect) {
+            resumeSelect.addEventListener("change", validateResume);
+        }
+        if (resumeFile) {
+            resumeFile.addEventListener("change", validateResume);
+        }
+
+        setupForm.addEventListener("submit", function(e) {
+            const hasSelect = resumeSelect ? resumeSelect.value !== "" : false;
+            const hasFile = resumeFile && resumeFile.files ? resumeFile.files.length > 0 : false;
+
+            if (!hasSelect && !hasFile) {
+                e.preventDefault();
+                warning.classList.remove("d-none");
+                return;
+            }
+
+            startBtn.disabled = true;
+            startBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Preparing...';
+            loadingScreen.classList.remove("d-none");
+            loadingScreen.classList.add("d-flex");
+        });
+
+        // Initialize state
+        validateResume();
+    });
+</script>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const difficulty = document.getElementById('difficultySelect');
+    const questionCount = document.getElementById('questionCountSelect');
+    const recommendedCounts = {Easy: '10', Medium: '15', Hard: '20'};
+    difficulty.addEventListener('change', function () {
+        questionCount.value = recommendedCounts[difficulty.value] || '15';
+    });
+});
+</script>
 {% endblock %}

@@ -36,6 +36,7 @@ venv.bak/
 .env
 .env.*
 !.env.example
+env
 
 # Database dumps and local DB instances
 database/*.db

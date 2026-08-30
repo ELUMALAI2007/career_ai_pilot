@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Coding Leaderboard - CareerPilot AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .rank-badge {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+    .rank-1 { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #ffffff; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.4); }
+    .rank-2 { background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%); color: #ffffff; }
+    .rank-3 { background: linear-gradient(135deg, #b45309 0%, #78350f 100%); color: #ffffff; }
+    .rank-other { background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-secondary); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="fa-solid fa-trophy text-warning me-2"></i> Coding Leaderboard</h2>
+        <p class="text-muted mb-0">Rankings based on algorithmic challenges solved, difficulty points, and streaks.</p>
+    </div>
+    <a href="{{ url_for('coding.index') }}" class="btn btn-outline-primary">
+        <i class="fa-solid fa-code me-1"></i> Problem Arena
+    </a>
+</div>
+
+<!-- Current User Rank Snippet -->
+<div class="glass-card p-3 mb-4 bg-primary bg-opacity-10 border-primary">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="fs-4 text-primary"><i class="fa-solid fa-user-astronaut"></i></div>
+            <div>
+                <h6 class="fw-bold mb-0">Your Standing</h6>
+                <small class="text-muted">{{ user_progress.total_solved }} Problems Solved &bull; {{ user_progress.current_streak }} Day Streak &bull; <span class="text-danger fw-semibold"><i class="fa-solid fa-flag me-1"></i>{{ user_progress.proctor_flags }} Flags</span></small>
+            </div>
+        </div>
+        <div class="d-flex gap-4 text-center">
+            <div>
+                <div class="fs-5 fw-bold text-primary">{{ user_progress.total_xp }}</div>
+                <small class="text-muted">Total XP</small>
+            </div>
+            <div>
+                <div class="fs-5 fw-bold text-success">{{ user_progress.accuracy }}%</div>
+                <small class="text-muted">Accuracy</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Leaderboard Table -->
+<div class="glass-card p-0 overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light opacity-75">
+                <tr>
+                    <th style="width: 70px;" class="text-center">Rank</th>
+                    <th>Candidate</th>
+                    <th class="text-center">Solved</th>
+                    <th class="text-center">Difficulty Breakdown (E / M / H)</th>
+                    <th class="text-center">Streak</th>
+                    <th class="text-center" style="width: 100px;">Flags</th>
+                    <th class="text-end pe-4">Total XP</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if top_coders %}
+                    {% for coder in top_coders %}
+                        <tr {% if coder.user_id == current_user.id %}class="table-active border-start border-4 border-primary"{% endif %}>
+                            <td class="text-center">
+                                <span class="rank-badge {% if coder.rank == 1 %}rank-1{% elif coder.rank == 2 %}rank-2{% elif coder.rank == 3 %}rank-3{% else %}rank-other{% endif %}">
+                                    {% if coder.rank == 1 %}🥇{% elif coder.rank == 2 %}🥈{% elif coder.rank == 3 %}🥉{% else %}{{ coder.rank }}{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="fw-bold">{{ coder.user_name }}</div>
+                                {% if coder.user_id == current_user.id %}
+                                    <span class="badge bg-primary py-0 px-2 small" style="font-size: 0.7rem;">You</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center fw-semibold">{{ coder.total_solved }}</td>
+                            <td class="text-center">
+                                <span class="badge bg-success bg-opacity-25 text-success">{{ coder.easy_solved }}</span>
+                                <span class="badge bg-warning bg-opacity-25 text-warning">{{ coder.medium_solved }}</span>
+                                <span class="badge bg-danger bg-opacity-25 text-danger">{{ coder.hard_solved }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="text-muted"><i class="fa-solid fa-fire text-warning me-1"></i>{{ coder.current_streak }}d</span>
+                            </td>
+                            <td class="text-center">
+                                {% if coder.proctor_flags > 0 %}
+                                    <span class="badge bg-danger bg-opacity-25 text-danger fw-semibold">
+                                        <i class="fa-solid fa-flag me-1"></i>{{ coder.proctor_flags }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted small">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                <span class="fs-6 fw-bold text-primary">{{ coder.total_xp }} XP</span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            No ranked coders yet. Be the first to solve a problem!
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

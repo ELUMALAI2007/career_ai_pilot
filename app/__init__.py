@@ -89,6 +89,145 @@ def create_app(config_class=DevelopmentConfig):
         except Exception:
             db.session.rollback()
 
+        import os
+        import sys
+        is_testing = 'pytest' in sys.modules or 'PYTEST_CURRENT_TEST' in os.environ or app.config.get('TESTING')
+
+        if not is_testing:
+            # Safely apply schema migrations for any columns added later (e.g. is_verified)
+            try:
+                from sqlalchemy import inspect, text
+                inspector = inspect(db.engine)
+                
+                if 'users' in inspector.get_table_names():
+                    columns = [c['name'] for c in inspector.get_columns('users')]
+                    with db.engine.connect() as conn:
+                        needs_commit = False
+                        if 'google_id' not in columns:
+                            conn.execute(text("ALTER TABLE users ADD COLUMN google_id VARCHAR(100)"))
+                            needs_commit = True
+                        if 'profile_picture' not in columns:
+                            conn.execute(text("ALTER TABLE users ADD COLUMN profile_picture VARCHAR(500)"))
+                            needs_commit = True
+                        if 'auth_provider' not in columns:
+                            conn.execute(text("ALTER TABLE users ADD COLUMN auth_provider VARCHAR(20) DEFAULT 'local'"))
+                            needs_commit = True
+                        if 'status' not in columns:
+                            conn.execute(text("ALTER TABLE users ADD COLUMN status VARCHAR(20) DEFAULT 'approved'"))
+                            needs_commit = True
+                        if 'is_verified' not in columns:
+                            conn.execute(text("ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT 0"))
+                            needs_commit = True
+                        if 'last_login_at' not in columns:
+                            conn.execute(text("ALTER TABLE users ADD COLUMN last_login_at DATETIME"))
+                            needs_commit = True
+                        if needs_commit:
+                            conn.commit()
+
+                if 'interview_sessions' in inspector.get_table_names():
+                    interview_cols = [c['name'] for c in inspector.get_columns('interview_sessions')]
+                    with db.engine.connect() as conn:
+                        needs_commit = False
+                        if 'question_queue' not in interview_cols:
+                            conn.execute(text("ALTER TABLE interview_sessions ADD COLUMN question_queue JSON"))
+                            needs_commit = True
+                        if 'follow_up_count' not in interview_cols:
+                            conn.execute(text("ALTER TABLE interview_sessions ADD COLUMN follow_up_count INTEGER DEFAULT 0"))
+                            needs_commit = True
+                        if needs_commit:
+                            conn.commit()
+
+                if 'interview_questions' in inspector.get_table_names():
+                    question_cols = [c['name'] for c in inspector.get_columns('interview_questions')]
+                    if 'question' not in question_cols:
+                        with db.engine.connect() as conn:
+                            conn.execute(text("ALTER TABLE interview_questions RENAME TO interview_questions_legacy"))
+                            conn.commit()
+                        db.create_all()
+                        with db.engine.begin() as conn:
+                            if 'question_text' in question_cols:
+                                conn.execute(text(
+                                    "INSERT INTO interview_questions "
+                                    "(question, role, interview_type, difficulty, topic, company, is_active) "
+                                    "SELECT question_text, 'Software Developer', 'Technical', 'Medium', "
+                                    "'General', NULL, 1 FROM interview_questions_legacy "
+                                    "WHERE question_text IS NOT NULL AND question_text != ''"
+                                ))
+
+                if 'aptitude_questions' in inspector.get_table_names():
+                    apt_cols = [c['name'] for c in inspector.get_columns('aptitude_questions')]
+                    with db.engine.connect() as conn:
+                        needs_commit = False
+                        if 'is_active' not in apt_cols:
+                            conn.execute(text("ALTER TABLE aptitude_questions ADD COLUMN is_active BOOLEAN DEFAULT 1"))
+                            needs_commit = True
+                        if 'updated_at' not in apt_cols:
+                            conn.execute(text("ALTER TABLE aptitude_questions ADD COLUMN updated_at DATETIME"))
+                            needs_commit = True
+                        if needs_commit:
+                            conn.commit()
+            except Exception as e:
+                app.logger.warning(f"Error applying automatic schema migrations: {e}")
+
+            try:
+                from app.models.user import User, Role
+                admin_role = Role.query.filter_by(name='admin').first()
+                if not admin_role:
+                    admin_role = Role(name='admin', description='Platform Administrator')
+                    db.session.add(admin_role)
+                student_role = Role.query.filter_by(name='student').first()
+                if not student_role:
+                    student_role = Role(name='student', description='Placement Candidate Student')
+                    db.session.add(student_role)
+                db.session.commit()
+
+                admin_email = "admin@careerpilot.ai"
+                admin_user = User.query.filter_by(email=admin_email).first()
+                if not admin_user:
+                    admin_user = User(
+                        full_name='System Administrator',
+                        email=admin_email,
+                        role_id=admin_role.id,
+                        status='approved',
+                        auth_provider='local',
+                        is_active=True,
+                        is_verified=True
+                    )
+                    admin_user.set_password('AdminSecure123!')
+                    db.session.add(admin_user)
+                    db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+        # Seed required question banks when empty, unless the app is running under pytest.
+        if not is_testing:
+            try:
+                from app.models.aptitude import AptitudeQuestion
+                if AptitudeQuestion.query.count() == 0:
+                    app.logger.info("Aptitude questions not found. Seeding verified Aptitude questions into database...")
+                    from generate_question_bank import _do_generate_batch
+                    _do_generate_batch()
+            except Exception as e:
+                app.logger.warning(f"Error seeding aptitude questions: {e}")
+
+            try:
+                from app.models.interview import InterviewQuestion
+                if InterviewQuestion.query.count() == 0:
+                    from scripts.seed_interview_questions import seed_questions
+                    app.logger.info("Interview questions not found. Seeding question bank...")
+                    seed_questions()
+            except Exception as e:
+                app.logger.warning(f"Error seeding interview questions: {e}")
+
+            try:
+                from app.models.coding import CodingProblem
+                if CodingProblem.query.count() == 0:
+                    from database.seed_coding import seed_coding_database
+                    app.logger.info("Coding problems not found. Seeding challenge bank...")
+                    seed_coding_database(app)
+            except Exception as e:
+                app.logger.warning(f"Error seeding coding problems: {e}")
+
     # Login Manager Configuration
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Please log in to access this page.'

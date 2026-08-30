@@ -12,7 +12,7 @@ from app.models.user import User
 from app.models.aptitude import AptitudeAttempt, AptitudeTestResult
 from app.models.coding import CodingSubmission
 from app.models.communication import CommunicationAssessment
-from app.models.interview import MockInterview
+from app.models.interview import InterviewSession
 from app.models.resume import ResumeUpload, ResumeAnalysis
 from app.services.analytics_service import AnalyticsService
 
@@ -122,12 +122,12 @@ class DashboardService:
             })
 
         # Mock Interviews
-        interview_sub = MockInterview.query.filter_by(user_id=user_id).order_by(MockInterview.created_at.desc()).first()
+        interview_sub = InterviewSession.query.filter_by(user_id=user_id).order_by(InterviewSession.created_at.desc()).first()
         if interview_sub:
             activities.append({
                 "type": "interview",
                 "icon": "fa-user-tie text-warning",
-                "title": f"Mock Interview — {interview_sub.target_role}",
+                "title": f"Mock Interview — {interview_sub.role}",
                 "timestamp": interview_sub.created_at,
                 "time_str": cls._format_time_ago(interview_sub.created_at),
                 "status": f"Rating: {interview_sub.overall_score}/100"

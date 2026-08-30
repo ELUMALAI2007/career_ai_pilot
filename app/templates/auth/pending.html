@@ -5,7 +5,7 @@
     <div class="col-12 col-md-7 col-lg-6 text-center">
         <div class="glass-card p-4 p-md-5">
             <div class="mb-4">
-                <div class="d-inline-flex align-items-center justify-content-center bg-warning bg-opacity-20 text-warning rounded-circle p-4 mb-3" style="width: 80px; height: 80px;">
+                <div class="d-inline-flex align-items-center justify-content-center bg-warning bg-opacity-25 text-warning rounded-circle p-4 mb-3" style="width: 80px; height: 80px;">
                     <i class="fa-solid fa-hourglass-half fs-1"></i>
                 </div>
                 <h3 class="fw-bold mb-2">ACCESS PENDING</h3>
@@ -25,7 +25,7 @@
                     {% if current_user.profile_picture %}
                         <img src="{{ current_user.profile_picture }}" alt="Profile" class="rounded-circle" width="48" height="48">
                     {% else %}
-                        <div class="rounded-circle bg-primary bg-opacity-20 text-primary d-flex align-items-center justify-content-center fw-bold" style="width: 48px; height: 48px;">
+                        <div class="rounded-circle bg-primary bg-opacity-25 text-primary d-flex align-items-center justify-content-center fw-bold" style="width: 48px; height: 48px;">
                             {{ current_user.full_name[:1].upper() if current_user.full_name else 'U' }}
                         </div>
                     {% endif %}

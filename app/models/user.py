@@ -45,7 +45,7 @@ class User(db.Model, UserMixin):
 
     # Relationships
     resumes = db.relationship('ResumeUpload', backref='user', lazy='dynamic', cascade='all, delete-orphan')
-    interviews = db.relationship('MockInterview', backref='user', lazy='dynamic', cascade='all, delete-orphan')
+    interviews = db.relationship('InterviewSession', backref='user', lazy='dynamic', cascade='all, delete-orphan')
 
     def set_password(self, password: str):
         """Hashes and sets user password."""

@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}My Coding Submissions - CareerPilot AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .code-view-box {
+        background: #1e1e1e;
+        color: #d4d4d4;
+        border-radius: var(--radius-md);
+        padding: 16px;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.88rem;
+        white-space: pre-wrap;
+        max-height: 450px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="fa-solid fa-clock-rotate-left text-primary me-2"></i> Submission History</h2>
+        <p class="text-muted mb-0">Review past attempts, runtime speed, test case scores, and code solutions.</p>
+    </div>
+    <a href="{{ url_for('coding.index') }}" class="btn btn-outline-primary">
+        <i class="fa-solid fa-code me-1"></i> Problem Arena
+    </a>
+</div>
+
+<!-- Stats Bar -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="glass-card p-3 text-center">
+            <div class="fs-4 fw-bold text-primary">{{ user_progress.total_attempts }}</div>
+            <small class="text-muted">Total Submissions</small>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass-card p-3 text-center">
+            <div class="fs-4 fw-bold text-success">{{ user_progress.total_solved }}</div>
+            <small class="text-muted">Accepted Problems</small>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass-card p-3 text-center">
+            <div class="fs-4 fw-bold text-warning">{{ user_progress.accuracy }}%</div>
+            <small class="text-muted">Accuracy Rate</small>
+        </div>
+    </div>
+</div>
+
+<!-- Submissions Table -->
+<div class="glass-card p-0 overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light opacity-75">
+                <tr>
+                    <th>Problem</th>
+                    <th>Status</th>
+                    <th>Language</th>
+                    <th>Runtime</th>
+                    <th>Passed Tests</th>
+                    <th>Submitted At</th>
+                    <th class="text-center">Code</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if submissions %}
+                    {% for sub in submissions %}
+                        <tr>
+                            <td>
+                                {% if sub.problem_slug %}
+                                    <a href="{{ url_for('coding.problem_detail', slug=sub.problem_slug) }}" class="fw-semibold text-decoration-none text-body">
+                                        {{ sub.problem_title }}
+                                    </a>
+                                {% else %}
+                                    <span class="fw-semibold text-body">{{ sub.problem_title }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if sub.status == 'Accepted' %}
+                                    <span class="badge bg-success"><i class="fa-solid fa-check me-1"></i> Accepted</span>
+                                {% elif sub.status == 'Wrong Answer' %}
+                                    <span class="badge bg-danger"><i class="fa-solid fa-xmark me-1"></i> Wrong Answer</span>
+                                {% elif sub.status == 'Time Limit Exceeded' %}
+                                    <span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i> TLE</span>
+                                {% elif sub.status == 'Compilation Error' %}
+                                    <span class="badge bg-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i> Compilation Error</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ sub.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td><span class="badge bg-secondary bg-opacity-25 text-body fw-normal">{{ sub.language|capitalize }}</span></td>
+                            <td class="small">{{ sub.execution_time_ms }} ms</td>
+                            <td class="small">{{ sub.passed_tests }}/{{ sub.total_tests }}</td>
+                            <td class="small text-muted">{{ sub.submitted_at }}</td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="viewCodeById(Number('{{ sub.id }}'))">
+                                    <i class="fa-solid fa-eye me-1"></i> View
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <i class="fa-solid fa-inbox fs-1 text-muted mb-2 d-block opacity-50"></i>
+                            <h6 class="fw-bold">No Submissions Found</h6>
+                            <p class="small text-muted">Solve challenges in the Problem Arena to track submissions.</p>
+                            <a href="{{ url_for('coding.index') }}" class="btn btn-sm btn-primary">Start Solving</a>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Code Viewer Modal -->
+<div class="modal fade" id="codeViewerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content glass-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0" id="modalProblemTitle">Submission Code</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <div class="d-flex gap-2 mb-3 small">
+                <span id="modalStatusBadge" class="badge bg-success">Accepted</span>
+                <span id="modalLangBadge" class="badge bg-secondary">Python</span>
+                <span id="modalRuntimeBadge" class="text-muted">12 ms</span>
+            </div>
+
+            <div class="code-view-box mb-3" id="modalCodeBody"></div>
+
+            <div class="d-flex justify-content-end">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<!-- Non-executable JSON container to prevent HTML parsing errors -->
+<script type="application/json" id="submissions-json">
+    {{ submissions|tojson|safe }}
+</script>
+
+{% block extra_js %}
+<script>
+    const SUBMISSIONS_DATA = JSON.parse(document.getElementById('submissions-json').textContent);
+
+    function viewCodeById(subId) {
+        const submission = SUBMISSIONS_DATA.find(s => s.id === subId);
+        if (!submission) return;
+
+        document.getElementById('modalProblemTitle').innerText = submission.problem_title;
+        document.getElementById('modalLangBadge').innerText = (submission.language || '').toUpperCase();
+        document.getElementById('modalRuntimeBadge').innerText = `${submission.execution_time_ms} ms (${submission.passed_tests}/${submission.total_tests} passed)`;
+        
+        const statusBadge = document.getElementById('modalStatusBadge');
+        statusBadge.innerText = submission.status;
+        statusBadge.className = submission.status === 'Accepted' ? 'badge bg-success' : 'badge bg-danger';
+
+        document.getElementById('modalCodeBody').innerText = submission.code_body;
+
+        const modal = new bootstrap.Modal(document.getElementById('codeViewerModal'));
+        modal.show();
+    }
+</script>
+{% endblock %}

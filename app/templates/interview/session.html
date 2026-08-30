@@ -1,0 +1,901 @@
+{% extends "base.html" %}
+{% block title %}Mock Interview Room - CareerPilot AI{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0 py-0" style="min-height: 100vh; background: linear-gradient(135deg, rgba(10,14,28,0.98), rgba(15,23,42,0.96));">
+    <div class="container py-3">
+    <!-- Header panel with details and progress -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="glass-card p-3 d-flex flex-wrap align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="badge bg-primary px-3 py-2 rounded-pill"><i class="fa-solid fa-headset me-1"></i> AI Interview Room</span>
+                    <h5 class="fw-bold mb-0 text-white" id="session-info-title">{{ session.role }} Mock Session</h5>
+                </div>
+                <div class="d-flex align-items-center gap-3 mt-2 mt-md-0">
+                    <div class="text-secondary small">
+                        <i class="fa-solid fa-building me-1"></i> <strong>{{ session.company }}</strong> | 
+                        <i class="fa-solid fa-layer-group me-1"></i> <strong>{{ session.difficulty }}</strong> | 
+                        <i class="fa-solid fa-tags me-1"></i> <strong>{{ session.interview_type }}</strong>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger fw-semibold" id="end-interview-btn">
+                        <i class="fa-solid fa-circle-stop me-1"></i> End Interview
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Simulator Grid -->
+    <div class="row g-3">
+        <!-- AI Card & Optional Webcam Column -->
+        <div class="col-lg-4">
+            <div class="d-flex flex-column gap-3">
+                <!-- AI Profile / Avatar Card -->
+                <div class="glass-card p-4 text-center position-relative overflow-hidden" id="interviewer-card">
+                    <div class="avatar-wave-container mb-3 position-relative mx-auto" style="width: 120px; height: 120px;">
+                        <!-- Avatar placeholder with pulse visualizer -->
+                        <div class="avatar-pulse-ring" id="pulse-ring"></div>
+                        <div class="avatar-bg d-flex align-items-center justify-content-center text-primary">
+                            <i class="fa-solid fa-robot fa-3x" id="avatar-icon"></i>
+                        </div>
+                    </div>
+                    <h5 class="fw-bold mb-1" id="avatar-name">Elena</h5>
+                    <p class="text-secondary small mb-3">AI Interview Panelist</p>
+                    
+                    <!-- Waveform Visualizer -->
+                    <div class="waveform-box mb-2" id="waveform">
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                    </div>
+                    <span class="badge bg-dark-subtle text-muted" id="ai-status">Ready</span>
+                </div>
+
+                <!-- Webcam Card -->
+                <div class="glass-card p-3 text-center">
+                    <div class="webcam-preview bg-black rounded mb-3 position-relative overflow-hidden" style="height: 200px;">
+                        <video id="webcam-video" autoplay playsinline muted class="w-100 h-100 object-fit-cover d-none"></video>
+                        <div id="webcam-fallback" class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+                            <i class="fa-solid fa-video-slash fa-2x mb-2"></i>
+                            <div class="small">Camera is off</div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button class="btn btn-sm btn-outline-secondary" id="toggle-camera-btn">
+                            <i class="fa-solid fa-video me-1"></i> Start Camera
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" id="toggle-mic-permission-btn">
+                            <i class="fa-solid fa-microphone me-1"></i> Mic Check
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question and Conversation Stream Column -->
+        <div class="col-lg-8">
+            <div id="interview-workspace-card" class="glass-card p-4 d-flex flex-column justify-content-between h-100" style="min-height: 520px;">
+                <!-- Discussion & Timeline Section -->
+                <div>
+                    <!-- Active Question Box -->
+                    <div class="active-question-card p-3 rounded mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-indigo text-indigo-light" id="active-q-type">Question Type: Loading...</span>
+                            <span class="badge bg-warning-subtle text-warning d-none" id="follow-up-badge">AI Follow-up</span>
+                            <span class="text-secondary small fw-bold" id="progress-indicator">Question Loading...</span>
+                        </div>
+                        <h4 class="fw-bold mb-3 text-white" id="active-question-text">Loading question...</h4>
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="btn btn-sm btn-indigo" id="tts-play-btn"><i class="fa-solid fa-volume-high me-1"></i> Listen</button>
+                            <button class="btn btn-sm btn-outline-secondary" id="tts-stop-btn"><i class="fa-solid fa-stop"></i></button>
+                            <button class="btn btn-sm btn-outline-secondary" id="tts-mute-btn"><i class="fa-solid fa-volume-xmark"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Conversation Timeline -->
+                    <div class="timeline-container mb-4" id="timeline">
+                        <!-- Loaded dynamic turn-by-turn items -->
+                    </div>
+                </div>
+
+                <!-- Input Textarea & Submit Controls -->
+                <div>
+                    <div class="progress mb-3" style="height: 6px;">
+                        <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" id="session-progress-bar" role="progressbar" style="width: 0%;"></div>
+                    </div>
+
+                    <div class="mb-3 position-relative">
+                        <div id="coding-challenge-panel" class="coding-challenge-panel d-none mb-3">
+                            <div class="coding-challenge-workspace rounded-3 p-4">
+                                <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                                    <h5 id="coding-challenge-title" class="mb-0 text-white"></h5>
+                                    <span id="coding-challenge-difficulty" class="coding-difficulty-badge"></span>
+                                </div>
+                                <p class="coding-workspace-label mb-2">Problem statement</p>
+                                <p id="coding-challenge-description" class="coding-challenge-description mb-3"></p>
+                                <div id="coding-samples" class="coding-samples mb-3"></div>
+                                <div class="row g-3 small mb-4">
+                                    <div class="col-md-6"><div class="coding-meta-card"><strong>Input</strong><span id="coding-challenge-input"></span></div></div>
+                                    <div class="col-md-6"><div class="coding-meta-card"><strong>Output</strong><span id="coding-challenge-output"></span></div></div>
+                                </div>
+                                <label for="coding-editor" class="form-label fw-semibold text-white mb-2"><i class="fa-solid fa-code me-2 text-primary"></i>Your solution · Python</label>
+                                <textarea id="coding-editor" class="coding-editor font-monospace" rows="12" spellcheck="false" placeholder="Write your solution here..."></textarea>
+                                <div id="coding-test-results" class="coding-test-results d-none" aria-live="polite"></div>
+                            </div>
+                        </div>
+                        <textarea class="form-control bg-dark-subtle border-secondary-subtle" rows="4" id="answer-textarea" placeholder="Type your response here or click 'Speak' to transcribe your voice..."></textarea>
+                        <div class="position-absolute bottom-0 start-0 m-2 d-none" id="transcribing-indicator">
+                            <span class="spinner-grow spinner-grow-sm text-primary" role="status"></span>
+                            <span class="small text-primary fw-bold ms-1">Listening...</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-primary fw-semibold" id="stt-btn">
+                                <i class="fa-solid fa-microphone me-2"></i> Speak
+                            </button>
+                            <button class="btn btn-outline-secondary d-none" id="stt-stop-btn">
+                                <i class="fa-solid fa-microphone-slash me-2"></i> Stop Transcribing
+                            </button>
+                            <button class="btn btn-outline-warning d-none" id="skip-coding-btn">
+                                <i class="fa-solid fa-forward me-1"></i> Don't know — skip
+                            </button>
+                        </div>
+                        <button class="btn btn-success px-4 fw-bold" id="submit-answer-btn">
+                            Submit Answer <i class="fa-solid fa-paper-plane ms-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<div id="fullscreen-prompt" class="position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center" style="background: rgba(2,6,23,0.72); z-index: 1100; backdrop-filter: blur(4px);">
+    <div class="glass-card p-4 text-center" style="max-width: 420px; border-radius: 18px;">
+        <h5 class="fw-bold mb-3 text-white">Enter full screen interview</h5>
+        <p class="text-secondary mb-3">This interview is designed to run in full screen for a realistic mock interview experience.</p>
+        <button id="enter-fullscreen-btn" class="btn btn-primary-custom">Go Full Screen</button>
+    </div>
+</div>
+
+<style>
+    /* Premium simulation elements styles */
+    .avatar-bg {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background-color: rgba(99, 102, 241, 0.1);
+        border: 2px solid rgba(99, 102, 241, 0.3);
+        transition: all 0.3s ease;
+    }
+    .avatar-pulse-ring {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 4px solid rgba(99, 102, 241, 0.4);
+        top: 0;
+        left: 0;
+        animation: pulseRing 2s infinite ease-out;
+        opacity: 0;
+    }
+    @keyframes pulseRing {
+        0% { transform: scale(0.95); opacity: 1; }
+        100% { transform: scale(1.3); opacity: 0; }
+    }
+    .waveform-box {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        height: 30px;
+    }
+    .waveform-box .bar {
+        width: 4px;
+        background-color: #4f46e5;
+        border-radius: 2px;
+        transition: height 0.15s ease;
+        height: 4px;
+    }
+    .waveform-box.active .bar {
+        animation: wave 1.2s infinite ease-in-out;
+    }
+    .waveform-box.active .bar:nth-child(2) { animation-delay: 0.15s; }
+    .waveform-box.active .bar:nth-child(3) { animation-delay: 0.3s; }
+    .waveform-box.active .bar:nth-child(4) { animation-delay: 0.45s; }
+    .waveform-box.active .bar:nth-child(5) { animation-delay: 0.6s; }
+    .waveform-box.active .bar:nth-child(6) { animation-delay: 0.75s; }
+    .waveform-box.active .bar:nth-child(7) { animation-delay: 0.9s; }
+    @keyframes wave {
+        0%, 100% { height: 4px; }
+        50% { height: 26px; }
+    }
+    .active-question-card {
+        background-color: rgba(99, 102, 241, 0.12);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+    .bg-indigo {
+        background-color: rgba(99, 102, 241, 0.15);
+    }
+    .text-indigo-light {
+        color: #a5b4fc;
+    }
+    .btn-indigo {
+        background-color: #4f46e5;
+        color: white;
+        border: none;
+    }
+    .btn-indigo:hover {
+        background-color: #4338ca;
+    }
+    .timeline-container {
+        max-height: 220px;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+    .bubble {
+        padding: 10px 14px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        max-width: 85%;
+        font-size: 0.95rem;
+    }
+    .bubble.ai {
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-top-left-radius: 2px;
+        align-self: flex-start;
+    }
+    .bubble.candidate {
+        background-color: rgba(99, 102, 241, 0.18);
+        border: 1px solid rgba(99, 102, 241, 0.25);
+        border-top-right-radius: 2px;
+        align-self: flex-end;
+    }
+    .coding-challenge-workspace { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: 1.25rem; background: #101b31; border: 1px solid rgba(99, 102, 241, 0.52); box-shadow: 0 14px 30px rgba(0, 0, 0, 0.2); }
+    .coding-challenge-workspace > :nth-child(1) { grid-column: 1 / -1; }
+    .coding-challenge-workspace > :nth-child(2) { grid-column: 1; grid-row: 2; }
+    .coding-challenge-workspace > :nth-child(3) { grid-column: 1; grid-row: 3; }
+    .coding-challenge-workspace > :nth-child(4) { grid-column: 1; grid-row: 4; }
+    .coding-challenge-workspace > :nth-child(5) { grid-column: 1; grid-row: 5; }
+    .coding-challenge-workspace > :nth-child(6) { grid-column: 2; grid-row: 2; }
+    .coding-challenge-workspace > :nth-child(7) { grid-column: 2; grid-row: 3 / span 3; }
+    .coding-challenge-workspace > :nth-child(8) { grid-column: 2; grid-row: 6; }
+    .coding-workspace-label { color: #93c5fd; font-size: 0.76rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    .coding-challenge-description { color: #dbeafe; line-height: 1.65; white-space: pre-line; }
+    .coding-difficulty-badge { background: #1d4ed8; color: #eff6ff; border-radius: 999px; padding: 0.35rem 0.7rem; text-transform: capitalize; }
+    .coding-meta-card { height: 100%; padding: 0.8rem; background: #172641; border: 1px solid #2b3d5d; border-radius: 0.5rem; color: #cbd5e1; }
+    .coding-meta-card strong { display: block; margin-bottom: 0.3rem; color: #93c5fd; }
+    .coding-samples { display: grid; gap: 0.55rem; }
+    .coding-sample-card { padding: 0.75rem; background: #0c1628; border-left: 3px solid #4f46e5; border-radius: 0.35rem; }
+    .coding-sample-title { color: #93c5fd; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+    .coding-sample-values { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin: 0.45rem 0; }
+    .coding-sample-values strong { display: block; color: #cbd5e1; font-size: 0.78rem; }
+    .coding-sample-values code { white-space: pre-wrap; color: #f8fafc; }
+    .coding-sample-explanation { color: #cbd5e1; font-size: 0.86rem; line-height: 1.45; }
+    .coding-editor { width: 100%; resize: vertical; min-height: 310px; padding: 1rem; border: 1px solid #334155; border-radius: 0.55rem; outline: none; background: #080f1e; color: #e2e8f0; line-height: 1.55; tab-size: 4; }
+    .coding-editor:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.22); }
+    .coding-test-results { margin-top: 0.8rem; padding: 0.85rem; border: 1px solid #374151; border-radius: 0.55rem; background: #0c1628; }
+    .coding-result-summary { color: #e2e8f0; font-weight: 700; margin-bottom: 0.55rem; }
+    .coding-result-item { display: flex; justify-content: space-between; gap: 0.75rem; padding: 0.45rem 0; border-top: 1px solid #24334d; color: #cbd5e1; font-size: 0.86rem; }
+    .coding-result-item:first-of-type { border-top: 0; }
+    .coding-result-pass { color: #4ade80; }
+    .coding-result-fail { color: #fca5a5; }
+    /* Fullscreen mode intentionally locks the document scroll. Make the
+       interview workspace its own scroll container while solving code. */
+    body.coding-challenge-active #interview-workspace-card {
+        height: calc(100vh - 170px);
+        min-height: 0 !important;
+        max-height: calc(100vh - 170px);
+        overflow-y: scroll;
+        overscroll-behavior: contain;
+        justify-content: flex-start !important;
+    }
+    /* The whole right panel owns scrolling in coding mode. Prevent the
+       previous-answers list from capturing the mouse wheel independently. */
+    body.coding-challenge-active .timeline-container { max-height: none; overflow: visible; }
+    body.coding-challenge-active .coding-editor { min-height: 220px; }
+    @media (max-width: 991px) {
+        body.coding-challenge-active #interview-workspace-card { height: auto; max-height: none; overflow: visible; }
+        .coding-challenge-workspace { display: block; }
+        .coding-editor { min-height: 250px; }
+    }
+</style>
+
+<div id="fullscreen-prompt" class="position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center" style="background: rgba(2,6,23,0.72); z-index: 1100; backdrop-filter: blur(4px);">
+    <div class="glass-card p-4 text-center" style="max-width: 420px; border-radius: 18px;">
+        <h5 class="fw-bold mb-3 text-white">Enter full screen interview</h5>
+        <p class="text-secondary mb-3">This interview is designed to run in full screen for a realistic mock interview experience.</p>
+        <button id="enter-fullscreen-btn" class="btn btn-primary-custom">Go Full Screen</button>
+    </div>
+</div>
+
+<div id="session-data" data-session-id="{{ session.id }}" hidden></div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const sessionId = parseInt(document.getElementById("session-data").dataset.sessionId, 10);
+        const csrfToken = "{{ csrf_token() }}";
+        const fullscreenPrompt = document.getElementById("fullscreen-prompt");
+        const enterFullscreenBtn = document.getElementById("enter-fullscreen-btn");
+
+        function requestInterviewFullscreen() {
+            const docEl = document.documentElement;
+            const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+            const fullscreenActive = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+
+            if (!fullscreenActive && requestFS) {
+                requestFS.call(docEl).then(() => {
+                    if (fullscreenPrompt) {
+                        fullscreenPrompt.classList.add("d-none");
+                        fullscreenPrompt.classList.remove("d-flex");
+                    }
+                }).catch(() => {
+                    if (fullscreenPrompt) {
+                        fullscreenPrompt.classList.remove("d-none");
+                        fullscreenPrompt.classList.add("d-flex");
+                    }
+                });
+                return;
+            }
+
+            if (!fullscreenActive && fullscreenPrompt) {
+                fullscreenPrompt.classList.remove("d-none");
+                fullscreenPrompt.classList.add("d-flex");
+            }
+        }
+
+        if (enterFullscreenBtn) {
+            enterFullscreenBtn.addEventListener("click", function () {
+                requestInterviewFullscreen();
+            });
+        }
+
+        if (fullscreenPrompt) {
+            fullscreenPrompt.classList.remove("d-none");
+            fullscreenPrompt.classList.add("d-flex");
+        }
+
+        document.addEventListener('fullscreenchange', function () {
+            const fullscreenActive = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+            if (fullscreenPrompt) {
+                fullscreenPrompt.classList.toggle("d-none", fullscreenActive);
+                fullscreenPrompt.classList.toggle("d-flex", !fullscreenActive && !fullscreenPrompt.classList.contains("d-none"));
+            }
+        });
+
+        // DOM elements
+        const activeQuestionText = document.getElementById("active-question-text");
+        const activeQuestionType = document.getElementById("active-q-type");
+        const progressIndicator = document.getElementById("progress-indicator");
+        const sessionProgressBar = document.getElementById("session-progress-bar");
+        const timeline = document.getElementById("timeline");
+        const answerTextarea = document.getElementById("answer-textarea");
+        const codingPanel = document.getElementById("coding-challenge-panel");
+        const codingEditor = document.getElementById("coding-editor");
+        const codingSamples = document.getElementById("coding-samples");
+        const codingTestResults = document.getElementById("coding-test-results");
+        const transcribingIndicator = document.getElementById("transcribing-indicator");
+        
+        const submitBtn = document.getElementById("submit-answer-btn");
+        const skipCodingBtn = document.getElementById("skip-coding-btn");
+        const endBtn = document.getElementById("end-interview-btn");
+        const sttBtn = document.getElementById("stt-btn");
+        const sttStopBtn = document.getElementById("stt-stop-btn");
+        
+        const ttsPlayBtn = document.getElementById("tts-play-btn");
+        const ttsStopBtn = document.getElementById("tts-stop-btn");
+        const ttsMuteBtn = document.getElementById("tts-mute-btn");
+        
+        const toggleCameraBtn = document.getElementById("toggle-camera-btn");
+        const webcamVideo = document.getElementById("webcam-video");
+        const webcamFallback = document.getElementById("webcam-fallback");
+        
+        const aiStatus = document.getElementById("ai-status");
+        const pulseRing = document.getElementById("pulse-ring");
+        const waveform = document.getElementById("waveform");
+
+        let activeQuestion = "";
+        let isMuted = false;
+        let webcamStream = null;
+        let recognition = null;
+        let currentUtterance = null;
+
+        function setCodingChallenge(challenge) {
+            const isCodingChallenge = Boolean(challenge);
+            document.body.classList.toggle("coding-challenge-active", isCodingChallenge);
+            codingPanel.classList.toggle("d-none", !isCodingChallenge);
+            answerTextarea.classList.toggle("d-none", isCodingChallenge);
+            skipCodingBtn.classList.toggle("d-none", !isCodingChallenge);
+            sttBtn.classList.toggle("d-none", isCodingChallenge);
+            if (!isCodingChallenge) return;
+
+            codingTestResults.replaceChildren();
+            codingTestResults.classList.add("d-none");
+
+            document.getElementById("coding-challenge-title").innerText = challenge.title || "Coding Challenge";
+            document.getElementById("coding-challenge-difficulty").innerText = challenge.difficulty || "";
+            document.getElementById("coding-challenge-description").innerText = challenge.description || "";
+            document.getElementById("coding-challenge-input").innerText = challenge.input_format || "Not specified";
+            document.getElementById("coding-challenge-output").innerText = challenge.output_format || "Not specified";
+            codingSamples.replaceChildren();
+            (challenge.sample_test_cases || []).forEach((sample, index) => {
+                const card = document.createElement("div");
+                card.className = "coding-sample-card";
+                const title = document.createElement("div");
+                title.className = "coding-sample-title";
+                title.textContent = `Sample ${index + 1}`;
+                const values = document.createElement("div");
+                values.className = "coding-sample-values";
+                [["Input", sample.input], ["Output", sample.expected_output]].forEach(([label, value]) => {
+                    const column = document.createElement("div");
+                    const heading = document.createElement("strong");
+                    heading.textContent = label;
+                    const code = document.createElement("code");
+                    code.textContent = value || "-";
+                    column.append(heading, code);
+                    values.appendChild(column);
+                });
+                card.append(title, values);
+                if (sample.explanation) {
+                    const explanation = document.createElement("div");
+                    explanation.className = "coding-sample-explanation";
+                    explanation.textContent = `Explanation: ${sample.explanation}`;
+                    card.appendChild(explanation);
+                }
+                codingSamples.appendChild(card);
+            });
+            codingSamples.classList.toggle("d-none", !codingSamples.childElementCount);
+            const templates = challenge.starter_templates || {};
+            codingEditor.value = templates.python || codingEditor.value || "def solve():\n    # Write your solution here\n    pass\n";
+            submitBtn.innerHTML = 'Submit Solution <i class="fa-solid fa-paper-plane ms-2"></i>';
+        }
+
+        function showCodingResults(result) {
+            codingTestResults.replaceChildren();
+            const summary = document.createElement("div");
+            summary.className = "coding-result-summary";
+            summary.textContent = `${result.passed_tests || 0} of ${result.total_tests || 0} test cases passed`;
+            codingTestResults.appendChild(summary);
+            (result.test_results || []).forEach((test, index) => {
+                const item = document.createElement("div");
+                item.className = "coding-result-item";
+                const label = document.createElement("span");
+                label.textContent = `${test.is_sample ? "Sample" : "Hidden"} test ${index + 1}`;
+                const status = document.createElement("span");
+                status.className = test.passed ? "coding-result-pass" : "coding-result-fail";
+                status.textContent = test.passed ? "Passed" : (test.status || "Failed");
+                item.append(label, status);
+                codingTestResults.appendChild(item);
+            });
+            codingTestResults.classList.remove("d-none");
+        }
+
+        // Initialize Web Speech APIs
+        // TTS Synthesis
+        const synth = window.speechSynthesis;
+
+        function speakQuestion(text) {
+            if (isMuted || !synth) return;
+            synth.cancel(); // cancel any active speaking
+
+            // Clean text from symbols
+            const cleanText = text.replace(/[*#]/g, '');
+
+            currentUtterance = new SpeechSynthesisUtterance(cleanText);
+            
+            // Try to find a nice English voice
+            const voices = synth.getVoices();
+            const preferredVoice = voices.find(voice => voice.lang.includes('en-US') || voice.lang.includes('en-GB'));
+            if (preferredVoice) {
+                currentUtterance.voice = preferredVoice;
+            }
+
+            currentUtterance.onstart = function() {
+                aiStatus.innerText = "Speaking";
+                pulseRing.style.display = "block";
+                waveform.classList.add("active");
+            };
+
+            currentUtterance.onend = function() {
+                aiStatus.innerText = "Listening";
+                pulseRing.style.display = "none";
+                waveform.classList.remove("active");
+            };
+
+            currentUtterance.onerror = function() {
+                aiStatus.innerText = "Ready";
+                pulseRing.style.display = "none";
+                waveform.classList.remove("active");
+            };
+
+            synth.speak(currentUtterance);
+        }
+
+        // Trigger loading voices (some browsers delay voice load)
+        if (synth) {
+            synth.getVoices();
+        }
+
+        // STT Speech Recognition with improved word capture
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+            recognition.maxAlternatives = 1;
+
+            let committedTranscript = '';
+            let interimTranscript = '';
+            let lastResultIndex = -1;
+
+            recognition.onstart = function() {
+                committedTranscript = answerTextarea.value.trim();
+                interimTranscript = '';
+                lastResultIndex = -1;
+                transcribingIndicator.classList.remove("d-none");
+                sttBtn.classList.add("d-none");
+                sttStopBtn.classList.remove("d-none");
+            };
+
+            recognition.onresult = function(event) {
+                // Process new results starting from where we left off
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    const transcript = event.results[i][0].transcript.trim();
+                    const confidence = event.results[i][0].confidence;
+                    
+                    if (event.results[i].isFinal) {
+                        // Only add if confidence is reasonable or if we need to capture something
+                        if (transcript && (confidence > 0.5 || transcript.length > 0)) {
+                            committedTranscript += (committedTranscript ? ' ' : '') + transcript;
+                        }
+                        interimTranscript = '';
+                        lastResultIndex = i;
+                    } else {
+                        // For interim results, capture them (even low confidence)
+                        interimTranscript = transcript;
+                    }
+                }
+
+                // Update textarea with both committed and interim
+                answerTextarea.value = [committedTranscript, interimTranscript]
+                    .filter(s => s && s.length > 0)
+                    .join(' ');
+            };
+
+            recognition.onend = function() {
+                transcribingIndicator.classList.add("d-none");
+                sttBtn.classList.remove("d-none");
+                sttStopBtn.classList.add("d-none");
+                
+                // Auto-restart if user was still speaking (continuous mode)
+                // This keeps the mic open as long as the button says "Stop"
+                if (!sttStopBtn.classList.contains("d-none")) {
+                    setTimeout(() => {
+                        if (recognition && !sttStopBtn.classList.contains("d-none")) {
+                            recognition.start();
+                        }
+                    }, 100);
+                }
+            };
+
+            recognition.onerror = function(event) {
+                console.error("Speech Recognition Error:", event.error);
+                if (event.error === 'not-allowed') {
+                    alert("Microphone access denied! Please click the camera/mic icon in the browser address bar and grant access to this site.");
+                } else if (event.error === 'service-not-allowed') {
+                    alert("Speech recognition is blocked or not allowed on this browser.");
+                } else if (event.error === 'network') {
+                    console.log("Network issue, will retry...");
+                } else {
+                    alert("Speech Recognition Error: " + event.error + ". Make sure you are using Google Chrome or Microsoft Edge on localhost/HTTPS.");
+                }
+                // Don't stop on error - let it retry
+            };
+        } else {
+            sttBtn.disabled = true;
+            sttBtn.title = "Browser Speech Recognition not supported in this browser.";
+        }
+
+        // Webcam Stream
+        async function startWebcam() {
+            try {
+                webcamStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                webcamVideo.srcObject = webcamStream;
+                webcamVideo.classList.remove("d-none");
+                webcamFallback.classList.add("d-none");
+                toggleCameraBtn.innerHTML = '<i class="fa-solid fa-video-slash me-1"></i> Stop Camera';
+                toggleCameraBtn.classList.replace("btn-outline-secondary", "btn-danger");
+            } catch (err) {
+                console.error("Webcam Access Error:", err);
+                alert("Could not access camera. Please check browser permissions.");
+            }
+        }
+
+        function stopWebcam() {
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcamStream = null;
+            }
+            webcamVideo.srcObject = null;
+            webcamVideo.classList.add("d-none");
+            webcamFallback.classList.remove("d-none");
+            toggleCameraBtn.innerHTML = '<i class="fa-solid fa-video me-1"></i> Start Camera';
+            toggleCameraBtn.classList.replace("btn-danger", "btn-outline-secondary");
+        }
+
+        // Camera Toggles
+        toggleCameraBtn.addEventListener("click", function() {
+            if (webcamStream) {
+                stopWebcam();
+            } else {
+                startWebcam();
+            }
+        });
+
+        document.getElementById("toggle-mic-permission-btn").addEventListener("click", async function() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                stream.getTracks().forEach(track => track.stop());
+                alert("Microphone connection is working correctly!");
+            } catch (err) {
+                alert("Microphone access denied or not connected.");
+            }
+        });
+
+        // STT Controls
+        sttBtn.addEventListener("click", function() {
+            if (window.isSecureContext === false) {
+                alert("Speech recognition requires a secure context (HTTPS or localhost/127.0.0.1). If you are accessing this site via a local IP address (e.g. 192.168.x.x), please use http://127.0.0.1:5000 instead.");
+                return;
+            }
+            if (recognition) {
+                recognition.start();
+            }
+        });
+
+        sttStopBtn.addEventListener("click", function() {
+            if (recognition) {
+                // Abort will stop recognition and trigger onend
+                recognition.abort();
+            }
+        });
+
+        // TTS Controls
+        ttsPlayBtn.addEventListener("click", function() {
+            speakQuestion(activeQuestion);
+        });
+
+        ttsStopBtn.addEventListener("click", function() {
+            if (synth) synth.cancel();
+            aiStatus.innerText = "Ready";
+            pulseRing.style.display = "none";
+            waveform.classList.remove("active");
+        });
+
+        ttsMuteBtn.addEventListener("click", function() {
+            isMuted = !isMuted;
+            if (isMuted) {
+                ttsMuteBtn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+                ttsMuteBtn.classList.replace("btn-outline-secondary", "btn-danger");
+                if (synth) synth.cancel();
+            } else {
+                ttsMuteBtn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
+                ttsMuteBtn.classList.replace("btn-danger", "btn-outline-secondary");
+            }
+        });
+
+        // Load Session state from API
+        function loadSessionState() {
+            fetch(`/interview/api/session/${sessionId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        activeQuestion = data.active_question;
+                        activeQuestionText.innerText = activeQuestion;
+                        activeQuestionType.innerText = `Question Type: ${data.active_question_type}`;
+                        document.getElementById("follow-up-badge").classList.toggle("d-none", data.active_question_type !== "Follow-up");
+                        
+                        // Progress
+                        const percentage = data.total_questions ? ((data.current_question_no - 1) / data.total_questions) * 100 : 0;
+                        sessionProgressBar.style.width = `${Math.min(100, Math.max(0, percentage))}%`;
+                        progressIndicator.innerText = `Question ${data.current_question_no} of ${data.total_questions}`;
+
+                        if (data.active_question_type === "Coding Challenge") {
+                            activeQuestionText.innerText = "Review the problem below, explain your approach, and write a working solution.";
+                            activeQuestionType.innerText = "Question Type: Coding Challenge";
+                        }
+                        setCodingChallenge(data.coding_challenge);
+                        if (data.active_question_type !== "Coding Challenge") {
+                            submitBtn.innerHTML = 'Submit Answer <i class="fa-solid fa-paper-plane ms-2"></i>';
+                        }
+
+                        // Speak new question
+                        if (data.active_question_type !== "Coding Challenge") {
+                            speakQuestion(activeQuestion);
+                        }
+
+                        // Populate timeline history
+                        timeline.innerHTML = "";
+                        data.history.forEach(item => {
+                            const qDiv = document.createElement("div");
+                            qDiv.className = "d-flex flex-column align-items-start w-100";
+                            qDiv.innerHTML = `<div class="bubble ai"><strong> Elena:</strong> ${item.question}</div>`;
+                            
+                            const aDiv = document.createElement("div");
+                            aDiv.className = "d-flex flex-column align-items-end w-100";
+                            aDiv.innerHTML = `<div class="bubble candidate"><strong> You:</strong> ${item.answer}</div>`;
+                            
+                            timeline.appendChild(qDiv);
+                            timeline.appendChild(aDiv);
+                        });
+
+                        // Auto scroll timeline to bottom
+                        timeline.scrollTop = timeline.scrollHeight;
+                    } else {
+                        alert("Error loading interview state: " + data.error);
+                    }
+                })
+                .catch(err => console.error("API error:", err));
+        }
+
+        // Submit candidate response
+        submitBtn.addEventListener("click", function() {
+            const answer = codingPanel.classList.contains("d-none")
+                ? answerTextarea.value.trim()
+                : codingEditor.value.trim();
+            if (!answer) {
+                alert(codingPanel.classList.contains("d-none") ? "Please write or speak an answer before submitting." : "Please write your solution before submitting.");
+                return;
+            }
+
+            if (!codingPanel.classList.contains("d-none")) {
+                submitBtn.disabled = true;
+                fetch("/interview/api/submit-coding-solution", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
+                    body: JSON.stringify({session_id: sessionId, code: answer})
+                })
+                .then(res => res.json())
+                .then(data => {
+                    submitBtn.disabled = false;
+                    if (!data.success) throw new Error(data.error || "Unable to grade solution.");
+                    if (!data.accepted) {
+                        const result = data.coding_result || {};
+                        showCodingResults(result);
+                        return;
+                    }
+                    alert(`Accepted! ${data.coding_result.passed_tests}/${data.coding_result.total_tests} tests passed.`);
+                    if (data.advance && data.advance.is_finished) window.location.href = `/interview/report/${sessionId}`;
+                    else loadSessionState();
+                })
+                .catch(err => { submitBtn.disabled = false; alert(err.message || "Unable to grade solution."); });
+                return;
+            }
+
+            if (recognition) {
+                recognition.stop();
+            }
+
+            // Lock controls & show status loading
+            submitBtn.disabled = true;
+            answerTextarea.disabled = true;
+            aiStatus.innerText = "Evaluating";
+            pulseRing.style.display = "block";
+            activeQuestionText.innerText = "Evaluating response. Generating follow-up question...";
+
+            fetch("/interview/api/submit-answer", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    answer: answer
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                submitBtn.disabled = false;
+                answerTextarea.disabled = false;
+                answerTextarea.value = "";
+                codingEditor.value = "";
+
+                if (data.success) {
+                    if (data.is_finished) {
+                        if (synth) synth.cancel();
+                        window.location.href = `/interview/report/${sessionId}`;
+                    } else {
+                        loadSessionState();
+                    }
+                } else {
+                    alert("Submission failed: " + data.error);
+                    activeQuestionText.innerText = activeQuestion;
+                    aiStatus.innerText = "Ready";
+                    pulseRing.style.display = "none";
+                }
+            })
+            .catch(err => {
+                submitBtn.disabled = false;
+                answerTextarea.disabled = false;
+                console.error(err);
+                alert("Network communication error. Please try again.");
+                activeQuestionText.innerText = activeQuestion;
+                aiStatus.innerText = "Ready";
+                pulseRing.style.display = "none";
+            });
+        });
+
+        skipCodingBtn.addEventListener("click", function() {
+            if (!confirm("Skip this coding challenge and continue to the next question?")) return;
+            skipCodingBtn.disabled = true;
+            fetch("/interview/api/skip-coding-challenge", {
+                method: "POST",
+                headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
+                body: JSON.stringify({session_id: sessionId})
+            })
+            .then(res => res.json())
+            .then(data => {
+                skipCodingBtn.disabled = false;
+                if (!data.success) throw new Error(data.error || "Unable to skip challenge.");
+                if (data.is_finished) window.location.href = `/interview/report/${sessionId}`;
+                else loadSessionState();
+            })
+            .catch(err => { skipCodingBtn.disabled = false; alert(err.message || "Unable to skip challenge."); });
+        });
+
+        // Abort / End Session early
+        endBtn.addEventListener("click", function() {
+            if (confirm("Are you sure you want to end this interview session? Your completed answers will be evaluated to generate a final report.")) {
+                if (synth) synth.cancel();
+                
+                endBtn.disabled = true;
+                submitBtn.disabled = true;
+                aiStatus.innerText = "Finalizing";
+                
+                fetch("/interview/api/finish-session", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken
+                    },
+                    body: JSON.stringify({
+                        session_id: sessionId
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.replace(data.report_url || `/interview/report/${sessionId}`);
+                    } else {
+                        alert("Failed to finalize session: " + data.error);
+                        endBtn.disabled = false;
+                        submitBtn.disabled = false;
+                        aiStatus.innerText = "Ready";
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Failed to end session due to connection issues.");
+                    endBtn.disabled = false;
+                    submitBtn.disabled = false;
+                    aiStatus.innerText = "Ready";
+                });
+            }
+        });
+
+        // Initial Load
+        loadSessionState();
+    });
+</script>
+{% endblock %}

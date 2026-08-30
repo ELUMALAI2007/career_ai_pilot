@@ -10,47 +10,43 @@
             <a class="sidebar-link {% if request.blueprint == 'admin' %}active{% endif %} text-warning" href="{{ url_for('admin.index') }}">
                 <i class="fa-solid fa-shield-halved"></i> Admin Portal
             </a>
-            <hr class="my-2 border-secondary opacity-25">
+        {% else %}
+            <a class="sidebar-link {% if request.blueprint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard.index') }}">
+                <i class="fa-solid fa-chart-line"></i> Dashboard
+            </a>
+            <a class="sidebar-link {% if request.blueprint == 'resume' %}active{% endif %}" href="{{ url_for('resume.index') }}">
+                <i class="fa-solid fa-file-invoice"></i> Resume ATS Analyzer
+            </a>
+            <a class="sidebar-link {% if request.blueprint == 'skill_gap' %}active{% endif %}" href="{{ url_for('skill_gap.index') }}">
+                <i class="fa-solid fa-sliders"></i> Skill Gap Analysis
+            </a>
+            <a class="sidebar-link {% if request.blueprint == 'learning_roadmap' %}active{% endif %}" href="{{ url_for('learning_roadmap.index') }}">
+                <i class="fa-solid fa-route"></i> Learning Roadmap
+            </a>
+            <a class="sidebar-link {% if request.blueprint == 'aptitude' %}active{% endif %}" href="{{ url_for('aptitude.index') }}">
+                <i class="fa-solid fa-brain"></i> Aptitude Practice
+            </a>
+            <a class="sidebar-link {% if request.blueprint == 'coding' %}active{% endif %}" href="{{ url_for('coding.index') }}">
+                <i class="fa-solid fa-code"></i> Coding Challenges
+            </a>
+            <a class="sidebar-link {% if request.blueprint == 'interview' %}active{% endif %}" href="{{ url_for('interview.index') }}">
+                <i class="fa-solid fa-headset"></i> AI Mock Interviews
+            </a>
+            <a class="sidebar-link {% if request.blueprint == 'communication' %}active{% endif %}" href="{{ url_for('communication.index') }}">
+                <i class="fa-solid fa-comments"></i> Communication Prep
+            </a>
+            <a class="sidebar-link {% if request.blueprint == 'job_eligibility' %}active{% endif %}" href="{{ url_for('job_eligibility.index') }}">
+                <i class="fa-solid fa-user-check"></i> Job Eligibility
+            </a>
+            <a class="sidebar-link {% if request.blueprint == 'company_prep' %}active{% endif %}" href="{{ url_for('company_prep.index') }}">
+                <i class="fa-solid fa-building"></i> Company Insights
+            </a>
+            <a class="sidebar-link {% if request.blueprint == 'planner' %}active{% endif %}" href="{{ url_for('planner.index') }}">
+                <i class="fa-solid fa-calendar-check"></i> Daily Study Planner
+            </a>
+            <a class="sidebar-link {% if request.blueprint == 'analytics' %}active{% endif %}" href="{{ url_for('analytics.index') }}">
+                <i class="fa-solid fa-chart-pie"></i> Detailed Analytics
+            </a>
         {% endif %}
-
-        <a class="sidebar-link {% if request.blueprint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard.index') }}">
-            <i class="fa-solid fa-chart-line"></i> Dashboard
-        </a>
-        <a class="sidebar-link {% if request.blueprint == 'resume' %}active{% endif %}" href="{{ url_for('resume.index') }}">
-            <i class="fa-solid fa-file-invoice"></i> Resume ATS Analyzer
-        </a>
-        <a class="sidebar-link {% if request.blueprint == 'skill_gap' %}active{% endif %}" href="{{ url_for('skill_gap.index') }}">
-            <i class="fa-solid fa-sliders"></i> Skill Gap Analysis
-        </a>
-        <a class="sidebar-link {% if request.blueprint == 'learning_roadmap' %}active{% endif %}" href="{{ url_for('learning_roadmap.index') }}">
-            <i class="fa-solid fa-route"></i> Learning Roadmap
-        </a>
-        <a class="sidebar-link {% if request.blueprint == 'aptitude' %}active{% endif %}" href="{{ url_for('aptitude.index') }}">
-            <i class="fa-solid fa-brain"></i> Aptitude Practice
-        </a>
-        <a class="sidebar-link {% if request.blueprint == 'coding' %}active{% endif %}" href="{{ url_for('coding.index') }}">
-            <i class="fa-solid fa-code"></i> Coding Challenges
-        </a>
-        <a class="sidebar-link {% if request.blueprint == 'interview' %}active{% endif %}" href="{{ url_for('interview.index') }}">
-            <i class="fa-solid fa-headset"></i> AI Mock Interviews
-        </a>
-        <a class="sidebar-link {% if request.blueprint == 'communication' %}active{% endif %}" href="{{ url_for('communication.index') }}">
-            <i class="fa-solid fa-comments"></i> Communication Prep
-        </a>
-        <a class="sidebar-link {% if request.blueprint == 'job_eligibility' %}active{% endif %}" href="{{ url_for('job_eligibility.index') }}">
-            <i class="fa-solid fa-user-check"></i> Job Eligibility
-        </a>
-        <a class="sidebar-link {% if request.blueprint == 'company_prep' %}active{% endif %}" href="{{ url_for('company_prep.index') }}">
-            <i class="fa-solid fa-building"></i> Company Insights
-        </a>
-        <a class="sidebar-link {% if request.blueprint == 'planner' %}active{% endif %}" href="{{ url_for('planner.index') }}">
-            <i class="fa-solid fa-calendar-check"></i> Daily Study Planner
-        </a>
-        <a class="sidebar-link {% if request.blueprint == 'ai_assistant' %}active{% endif %}" href="{{ url_for('ai_assistant.index') }}">
-            <i class="fa-solid fa-robot"></i> AI Career Assistant
-        </a>
-        <a class="sidebar-link {% if request.blueprint == 'analytics' %}active{% endif %}" href="{{ url_for('analytics.index') }}">
-            <i class="fa-solid fa-chart-pie"></i> Detailed Analytics
-        </a>
     </nav>
 </aside>

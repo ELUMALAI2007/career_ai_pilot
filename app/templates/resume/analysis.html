@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Resume Intelligence Report - v{{ analysis.resume.version_number }} - CareerPilot AI{% endblock %}
+
 {% block content %}
 <!-- Top Header Navigation -->
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -11,13 +12,15 @@
             <i class="fa-solid fa-square-poll-vertical text-primary me-2"></i> Resume Intelligence Dashboard
         </h2>
         <p class="text-muted mb-0">
-            Document: <span class="text-light fw-bold">{{ analysis.resume.filename }}</span> (v{{ analysis.resume.version_number }}) | 
-            Target Role: <span class="badge bg-primary fs-6">{{ analysis.resume.target_role }}</span> | 
+            Document: <span class="text-light fw-bold">{{ analysis.resume.filename }}</span> (v{{
+            analysis.resume.version_number }}) |
+            Target Role: <span class="badge bg-primary fs-6">{{ analysis.resume.target_role }}</span> |
             Company: <span class="badge bg-secondary fs-6">{{ analysis.resume.target_company }}</span>
         </p>
     </div>
     <div class="d-flex gap-2">
-        <a href="{{ url_for('resume.download_report', analysis_id=analysis.id) }}" class="btn btn-outline-info rounded-pill px-4">
+        <a href="{{ url_for('resume.download_report', analysis_id=analysis.id) }}"
+            class="btn btn-outline-info rounded-pill px-4">
             <i class="fa-solid fa-file-pdf me-2"></i> Download PDF Report
         </a>
     </div>
@@ -30,7 +33,7 @@
             <div class="text-muted small fw-bold">OVERALL READINESS</div>
             <div class="display-5 fw-bold text-primary my-1">{{ analysis.overall_score }}</div>
             <div class="progress bg-dark" style="height: 6px;">
-                <div class="progress-bar bg-primary" style="width: {{ analysis.overall_score }}%;"></div>
+                <div class="progress-bar bg-primary" style="width: {{ analysis.overall_score }}%"></div>
             </div>
         </div>
     </div>
@@ -39,7 +42,7 @@
             <div class="text-muted small fw-bold">ATS COMPATIBILITY</div>
             <div class="display-5 fw-bold text-info my-1">{{ analysis.ats_score }}</div>
             <div class="progress bg-dark" style="height: 6px;">
-                <div class="progress-bar bg-info" style="width: {{ analysis.ats_score }}%;"></div>
+                <div class="progress-bar bg-info" style="width: {{ analysis.ats_score }}%"></div>
             </div>
         </div>
     </div>
@@ -48,7 +51,7 @@
             <div class="text-muted small fw-bold">RESUME QUALITY</div>
             <div class="display-5 fw-bold text-success my-1">{{ analysis.quality_score }}</div>
             <div class="progress bg-dark" style="height: 6px;">
-                <div class="progress-bar bg-success" style="width: {{ analysis.quality_score }}%;"></div>
+                <div class="progress-bar bg-success" style="width: {{ analysis.quality_score }}%"></div>
             </div>
         </div>
     </div>
@@ -57,7 +60,7 @@
             <div class="text-muted small fw-bold">JOB MATCH SCORE</div>
             <div class="display-5 fw-bold text-warning my-1">{{ analysis.job_match_score }}</div>
             <div class="progress bg-dark" style="height: 6px;">
-                <div class="progress-bar bg-warning" style="width: {{ analysis.job_match_score }}%;"></div>
+                <div class="progress-bar bg-warning" style="width: {{ analysis.job_match_score }}%"></div>
             </div>
         </div>
     </div>
@@ -67,37 +70,44 @@
 <div class="glass-card p-4 mb-4">
     <ul class="nav nav-pills nav-fill mb-4 border-bottom border-secondary pb-3" id="analysisTabs" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active fw-bold" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
+            <button class="nav-link active fw-bold" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview"
+                type="button" role="tab">
                 <i class="fa-solid fa-eye me-2"></i> Overview
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link fw-bold" id="ats-tab" data-bs-toggle="tab" data-bs-target="#ats" type="button" role="tab">
+            <button class="nav-link fw-bold" id="ats-tab" data-bs-toggle="tab" data-bs-target="#ats" type="button"
+                role="tab">
                 <i class="fa-solid fa-microchip me-2"></i> ATS Keywords
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link fw-bold" id="skills-tab" data-bs-toggle="tab" data-bs-target="#skills" type="button" role="tab">
+            <button class="nav-link fw-bold" id="skills-tab" data-bs-toggle="tab" data-bs-target="#skills" type="button"
+                role="tab">
                 <i class="fa-solid fa-list-check me-2"></i> Skill Gap
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link fw-bold" id="bullets-tab" data-bs-toggle="tab" data-bs-target="#bullets" type="button" role="tab">
+            <button class="nav-link fw-bold" id="bullets-tab" data-bs-toggle="tab" data-bs-target="#bullets"
+                type="button" role="tab">
                 <i class="fa-solid fa-bolt me-2"></i> Bullet Quality
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link fw-bold" id="projects-tab" data-bs-toggle="tab" data-bs-target="#projects" type="button" role="tab">
+            <button class="nav-link fw-bold" id="projects-tab" data-bs-toggle="tab" data-bs-target="#projects"
+                type="button" role="tab">
                 <i class="fa-solid fa-diagram-project me-2"></i> Projects
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link fw-bold" id="questions-tab" data-bs-toggle="tab" data-bs-target="#questions" type="button" role="tab">
+            <button class="nav-link fw-bold" id="questions-tab" data-bs-toggle="tab" data-bs-target="#questions"
+                type="button" role="tab">
                 <i class="fa-solid fa-circle-question me-2"></i> Resume Questions
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link fw-bold btn-outline-primary" id="interview-tab" data-bs-toggle="tab" data-bs-target="#interview" type="button" role="tab">
+            <button class="nav-link fw-bold btn-outline-primary" id="interview-tab" data-bs-toggle="tab"
+                data-bs-target="#interview" type="button" role="tab">
                 <i class="fa-solid fa-comments me-2"></i> Interview Me Mode
             </button>
         </li>
@@ -108,39 +118,48 @@
         <div class="tab-pane fade show active" id="overview" role="tabpanel">
             <div class="row g-4">
                 <div class="col-lg-6">
-                    <h5 class="fw-bold mb-3"><i class="fa-solid fa-user-tie text-info me-2"></i> Recruiter First Impression</h5>
+                    <h5 class="fw-bold mb-3"><i class="fa-solid fa-user-tie text-info me-2"></i> Recruiter First
+                        Impression</h5>
                     <div class="p-3 bg-dark bg-opacity-50 rounded border border-secondary mb-4">
-                        <p class="text-light mb-0 fs-6" style="line-height: 1.6;">{{ analysis.recruiter_impression }}</p>
+                        <p class="text-light mb-0 fs-6" style="line-height: 1.6;">{{ analysis.recruiter_impression }}
+                        </p>
                     </div>
 
-                    <h5 class="fw-bold mb-3"><i class="fa-solid fa-wand-magic-sparkles text-success me-2"></i> AI Professional Summary Rewrite</h5>
+                    <h5 class="fw-bold mb-3"><i class="fa-solid fa-wand-magic-sparkles text-success me-2"></i> AI
+                        Professional Summary Rewrite</h5>
                     <div class="p-3 bg-dark bg-opacity-50 rounded border border-secondary mb-4">
-                        <p class="text-muted extra-small mb-1"><i class="fa-solid fa-info-circle text-info"></i> Rewritten based exclusively on verified resume facts:</p>
-                        <p class="text-light fst-italic mb-0" style="line-height: 1.5;">"{{ analysis.summary_rewrite }}"</p>
+                        <p class="text-muted extra-small mb-1"><i class="fa-solid fa-info-circle text-info"></i>
+                            Rewritten based exclusively on verified resume facts:</p>
+                        <p class="text-light fst-italic mb-0" style="line-height: 1.5;">"{{ analysis.summary_rewrite }}"
+                        </p>
                     </div>
                 </div>
 
                 <div class="col-lg-6">
-                    <h5 class="fw-bold mb-3"><i class="fa-solid fa-list-ol text-warning me-2"></i> Priority Improvement Plan (Fix These First)</h5>
+                    <h5 class="fw-bold mb-3"><i class="fa-solid fa-list-ol text-warning me-2"></i> Priority Improvement
+                        Plan (Fix These First)</h5>
                     {% set plan = analysis.get_priority_plan() %}
                     <div class="list-group mb-4">
                         {% for item in plan.get('high_priority', []) %}
-                            <div class="list-group-item bg-dark text-white border-danger mb-2 rounded">
-                                <div class="badge bg-danger mb-1"><i class="fa-solid fa-triangle-exclamation"></i> HIGH PRIORITY</div>
-                                <div>{{ item }}</div>
-                            </div>
+                        <div class="list-group-item bg-dark text-white border-danger mb-2 rounded">
+                            <div class="badge bg-danger mb-1"><i class="fa-solid fa-triangle-exclamation"></i> HIGH
+                                PRIORITY</div>
+                            <div>{{ item }}</div>
+                        </div>
                         {% endfor %}
                         {% for item in plan.get('medium_priority', []) %}
-                            <div class="list-group-item bg-dark text-white border-warning mb-2 rounded">
-                                <div class="badge bg-warning text-dark mb-1"><i class="fa-solid fa-circle-exclamation"></i> MEDIUM PRIORITY</div>
-                                <div>{{ item }}</div>
-                            </div>
+                        <div class="list-group-item bg-dark text-white border-warning mb-2 rounded">
+                            <div class="badge bg-warning text-dark mb-1"><i class="fa-solid fa-circle-exclamation"></i>
+                                MEDIUM PRIORITY</div>
+                            <div>{{ item }}</div>
+                        </div>
                         {% endfor %}
                         {% for item in plan.get('low_priority', []) %}
-                            <div class="list-group-item bg-dark text-white border-secondary mb-2 rounded">
-                                <div class="badge bg-secondary mb-1"><i class="fa-solid fa-circle-info"></i> LOW PRIORITY</div>
-                                <div>{{ item }}</div>
+                        <div class="list-group-item bg-dark text-white border-secondary mb-2 rounded">
+                            <div class="badge bg-secondary mb-1"><i class="fa-solid fa-circle-info"></i> LOW PRIORITY
                             </div>
+                            <div>{{ item }}</div>
+                        </div>
                         {% endfor %}
                     </div>
                 </div>
@@ -150,22 +169,24 @@
             <div class="row g-4 mt-1">
                 <div class="col-md-6">
                     <div class="p-3 bg-dark rounded border border-success">
-                        <h6 class="fw-bold text-success mb-3"><i class="fa-solid fa-circle-check me-2"></i> Verified Strengths</h6>
+                        <h6 class="fw-bold text-success mb-3"><i class="fa-solid fa-circle-check me-2"></i> Verified
+                            Strengths</h6>
                         <ul class="mb-0 text-light small ps-3">
                             {% for s in analysis.get_strengths() %}
-                                <li class="mb-2">{{ s }}</li>
+                            <li class="mb-2">{{ s }}</li>
                             {% endfor %}
                         </ul>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="p-3 bg-dark rounded border border-danger">
-                        <h6 class="fw-bold text-danger mb-3"><i class="fa-solid fa-triangle-exclamation me-2"></i> Recruiter Red Flags</h6>
+                        <h6 class="fw-bold text-danger mb-3"><i class="fa-solid fa-triangle-exclamation me-2"></i>
+                            Recruiter Red Flags</h6>
                         <ul class="mb-0 text-light small ps-3">
                             {% for r in analysis.get_red_flags() %}
-                                <li class="mb-2">{{ r }}</li>
+                            <li class="mb-2">{{ r }}</li>
                             {% else %}
-                                <li class="text-muted">No major red flags detected.</li>
+                            <li class="text-muted">No major red flags detected.</li>
                             {% endfor %}
                         </ul>
                     </div>
@@ -179,36 +200,41 @@
             <div class="row g-4 mb-4">
                 <div class="col-md-4">
                     <div class="p-3 bg-dark rounded border border-success text-center">
-                        <div class="fw-bold text-success fs-5 mb-1"><i class="fa-solid fa-check-double me-2"></i> Found Keywords ({{ kw.get('found', []) | length }})</div>
+                        <div class="fw-bold text-success fs-5 mb-1"><i class="fa-solid fa-check-double me-2"></i> Found
+                            Keywords ({{ kw.get('found', []) | length }})</div>
                         <div class="d-flex flex-wrap gap-1 justify-content-center mt-2">
                             {% for k in kw.get('found', []) %}
-                                <span class="badge bg-success bg-opacity-25 text-success border border-success">{{ k }}</span>
+                            <span class="badge bg-success bg-opacity-25 text-success border border-success">{{ k
+                                }}</span>
                             {% else %}
-                                <span class="text-muted small">None matched</span>
+                            <span class="text-muted small">None matched</span>
                             {% endfor %}
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="p-3 bg-dark rounded border border-warning text-center">
-                        <div class="fw-bold text-warning fs-5 mb-1"><i class="fa-solid fa-circle-half-stroke me-2"></i> Partial Matches ({{ kw.get('partial', []) | length }})</div>
+                        <div class="fw-bold text-warning fs-5 mb-1"><i class="fa-solid fa-circle-half-stroke me-2"></i>
+                            Partial Matches ({{ kw.get('partial', []) | length }})</div>
                         <div class="d-flex flex-wrap gap-1 justify-content-center mt-2">
                             {% for k in kw.get('partial', []) %}
-                                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning">{{ k }}</span>
+                            <span class="badge bg-warning bg-opacity-25 text-warning border border-warning">{{ k
+                                }}</span>
                             {% else %}
-                                <span class="text-muted small">None</span>
+                            <span class="text-muted small">None</span>
                             {% endfor %}
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="p-3 bg-dark rounded border border-danger text-center">
-                        <div class="fw-bold text-danger fs-5 mb-1"><i class="fa-solid fa-xmark me-2"></i> Missing Keywords ({{ kw.get('missing', []) | length }})</div>
+                        <div class="fw-bold text-danger fs-5 mb-1"><i class="fa-solid fa-xmark me-2"></i> Missing
+                            Keywords ({{ kw.get('missing', []) | length }})</div>
                         <div class="d-flex flex-wrap gap-1 justify-content-center mt-2">
                             {% for k in kw.get('missing', []) %}
-                                <span class="badge bg-danger bg-opacity-25 text-danger border border-danger">{{ k }}</span>
+                            <span class="badge bg-danger bg-opacity-25 text-danger border border-danger">{{ k }}</span>
                             {% else %}
-                                <span class="text-muted small">All key keywords present!</span>
+                            <span class="text-muted small">All key keywords present!</span>
                             {% endfor %}
                         </div>
                     </div>
@@ -216,11 +242,14 @@
             </div>
 
             <div class="glass-card p-3 bg-dark">
-                <h6 class="fw-bold text-info mb-2"><i class="fa-solid fa-key me-2"></i> Top 10 Keywords to Add Naturally</h6>
-                <p class="text-muted small">Incorporate these top missing role keywords naturally into experience or project bullet descriptions:</p>
+                <h6 class="fw-bold text-info mb-2"><i class="fa-solid fa-key me-2"></i> Top 10 Keywords to Add Naturally
+                </h6>
+                <p class="text-muted small">Incorporate these top missing role keywords naturally into experience or
+                    project bullet descriptions:</p>
                 <div class="d-flex flex-wrap gap-2">
                     {% for k in kw.get('top_10_to_add', []) %}
-                        <span class="badge bg-info text-dark font-monospace fs-6 px-3 py-2"><i class="fa-solid fa-plus me-1"></i> {{ k }}</span>
+                    <span class="badge bg-info text-dark font-monospace fs-6 px-3 py-2"><i
+                            class="fa-solid fa-plus me-1"></i> {{ k }}</span>
                     {% endfor %}
                 </div>
             </div>
@@ -234,42 +263,45 @@
                 <span class="badge bg-primary fs-6">{{ sk_data.get('skill_match_pct', 0) }}% Match</span>
             </div>
             <div class="progress bg-dark mb-4" style="height: 10px;">
-                <div class="progress-bar bg-success" style="width: {{ sk_data.get('skill_match_pct', 0) }}%;"></div>
+                <div class="progress-bar bg-success" data-width="{{ sk_data.get('skill_match_pct', 0) }}"></div>
             </div>
 
             <div class="row g-4">
                 <div class="col-md-4">
                     <div class="p-3 bg-dark rounded border border-danger">
-                        <h6 class="fw-bold text-danger mb-2"><i class="fa-solid fa-fire me-1"></i> High Priority Gaps</h6>
+                        <h6 class="fw-bold text-danger mb-2"><i class="fa-solid fa-fire me-1"></i> High Priority Gaps
+                        </h6>
                         <ul class="mb-0 text-light small ps-3">
                             {% for g in sk_data.get('high_priority_gaps', []) %}
-                                <li class="mb-1 text-danger fw-bold">{{ g }}</li>
+                            <li class="mb-1 text-danger fw-bold">{{ g }}</li>
                             {% else %}
-                                <li class="text-success">All core required skills present!</li>
+                            <li class="text-success">All core required skills present!</li>
                             {% endfor %}
                         </ul>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="p-3 bg-dark rounded border border-warning">
-                        <h6 class="fw-bold text-warning mb-2"><i class="fa-solid fa-triangle-exclamation me-1"></i> Medium Priority Gaps</h6>
+                        <h6 class="fw-bold text-warning mb-2"><i class="fa-solid fa-triangle-exclamation me-1"></i>
+                            Medium Priority Gaps</h6>
                         <ul class="mb-0 text-light small ps-3">
                             {% for g in sk_data.get('medium_priority_gaps', []) %}
-                                <li class="mb-1 text-warning">{{ g }}</li>
+                            <li class="mb-1 text-warning">{{ g }}</li>
                             {% else %}
-                                <li class="text-muted">None</li>
+                            <li class="text-muted">None</li>
                             {% endfor %}
                         </ul>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="p-3 bg-dark rounded border border-secondary">
-                        <h6 class="fw-bold text-muted mb-2"><i class="fa-solid fa-circle-info me-1"></i> Low Priority Gaps</h6>
+                        <h6 class="fw-bold text-muted mb-2"><i class="fa-solid fa-circle-info me-1"></i> Low Priority
+                            Gaps</h6>
                         <ul class="mb-0 text-light small ps-3">
                             {% for g in sk_data.get('low_priority_gaps', []) %}
-                                <li class="mb-1 text-muted">{{ g }}</li>
+                            <li class="mb-1 text-muted">{{ g }}</li>
                             {% else %}
-                                <li class="text-muted">None</li>
+                            <li class="text-muted">None</li>
                             {% endfor %}
                         </ul>
                     </div>
@@ -301,22 +333,23 @@
                 </div>
             </div>
 
-            <h5 class="fw-bold mb-3"><i class="fa-solid fa-code-compare text-info me-2"></i> Side-by-Side Bullet Recommendations</h5>
+            <h5 class="fw-bold mb-3"><i class="fa-solid fa-code-compare text-info me-2"></i> Side-by-Side Bullet
+                Recommendations</h5>
             {% for item in b_data.get('before_after_suggestions', []) %}
-                <div class="glass-card p-3 mb-3 bg-dark">
-                    <div class="row align-items-center">
-                        <div class="col-md-6 border-end border-secondary">
-                            <span class="badge bg-danger mb-1">CURRENT WEAK BULLET</span>
-                            <p class="text-muted small mb-0">{{ item.current }}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <span class="badge bg-success mb-1">SUGGESTED IMPACT BULLET</span>
-                            <p class="text-light fw-bold small mb-0">{{ item.suggested }}</p>
-                        </div>
+            <div class="glass-card p-3 mb-3 bg-dark">
+                <div class="row align-items-center">
+                    <div class="col-md-6 border-end border-secondary">
+                        <span class="badge bg-danger mb-1">CURRENT WEAK BULLET</span>
+                        <p class="text-muted small mb-0">{{ item.current }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="badge bg-success mb-1">SUGGESTED IMPACT BULLET</span>
+                        <p class="text-light fw-bold small mb-0">{{ item.suggested }}</p>
                     </div>
                 </div>
+            </div>
             {% else %}
-                <p class="text-muted">Bullet structures are well-phrased with impact action verbs!</p>
+            <p class="text-muted">Bullet structures are well-phrased with impact action verbs!</p>
             {% endfor %}
         </div>
 
@@ -328,41 +361,53 @@
                 <span class="badge bg-info fs-6">{{ p_data.get('project_strength_score', 0) }}/100</span>
             </div>
             <div class="progress bg-dark mb-4" style="height: 10px;">
-                <div class="progress-bar bg-info" style="width: {{ p_data.get('project_strength_score', 0) }}%;"></div>
+                <div id="project-strength-bar" class="progress-bar bg-info" data-width="{{ p_data.get('project_strength_score', 0) }}"></div>
+                <script>
+                    (function() {
+                        var bar = document.getElementById('project-strength-bar');
+                        if (bar) bar.style.width = bar.getAttribute('data-width') + '%';
+                    })();
+                </script>
             </div>
 
             <h6 class="fw-bold text-light mb-2">Extracted Technologies Across Projects:</h6>
             <div class="d-flex flex-wrap gap-2 mb-4">
                 {% for tech in p_data.get('extracted_tech_stack', []) %}
-                    <span class="badge bg-secondary px-3 py-2 fs-6">{{ tech }}</span>
+                <span class="badge bg-secondary px-3 py-2 fs-6">{{ tech }}</span>
                 {% endfor %}
             </div>
         </div>
 
         <!-- 6. RESUME QUESTIONS TAB -->
         <div class="tab-pane fade" id="questions" role="tabpanel">
-            <h5 class="fw-bold mb-3"><i class="fa-solid fa-circle-question text-primary me-2"></i> Verified "Questions From Your Resume"</h5>
-            <p class="text-muted small mb-4">These questions were extracted directly from the technologies, projects, and experiences in your resume:</p>
+            <h5 class="fw-bold mb-3"><i class="fa-solid fa-circle-question text-primary me-2"></i> Verified "Questions
+                From Your Resume"</h5>
+            <p class="text-muted small mb-4">These questions were extracted directly from the technologies, projects,
+                and experiences in your resume:</p>
 
             <div class="accordion accordion-flush" id="resumeQuestionsAccordion">
                 {% for q in questions %}
-                    <div class="accordion-item bg-dark text-white border-secondary mb-2 rounded">
-                        <h2 class="accordion-header" id="headingQ{{ q.id }}">
-                            <button class="accordion-button collapsed bg-dark text-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapseQ{{ q.id }}">
-                                <span class="badge bg-primary me-2">{{ q.category }}</span>
-                                <span class="badge bg-secondary me-2">{{ q.difficulty | title }}</span>
-                                <strong class="text-light">{{ q.question }}</strong>
-                            </button>
-                        </h2>
-                        <div id="collapseQ{{ q.id }}" class="accordion-collapse collapse" data-bs-parent="#resumeQuestionsAccordion">
-                            <div class="accordion-body bg-dark text-muted border-top border-secondary">
-                                <p class="mb-1"><strong class="text-info">Related Skill:</strong> {{ q.related_skill or 'General' }}</p>
-                                <p class="mb-0"><strong class="text-success">Sample Answer Guidance:</strong> {{ q.sample_answer_hint }}</p>
-                            </div>
+                <div class="accordion-item bg-dark text-white border-secondary mb-2 rounded">
+                    <h2 class="accordion-header" id="headingQ{{ q.id }}">
+                        <button class="accordion-button collapsed bg-dark text-white" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#collapseQ{{ q.id }}">
+                            <span class="badge bg-primary me-2">{{ q.category }}</span>
+                            <span class="badge bg-secondary me-2">{{ q.difficulty | title }}</span>
+                            <strong class="text-light">{{ q.question }}</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseQ{{ q.id }}" class="accordion-collapse collapse"
+                        data-bs-parent="#resumeQuestionsAccordion">
+                        <div class="accordion-body bg-dark text-muted border-top border-secondary">
+                            <p class="mb-1"><strong class="text-info">Related Skill:</strong> {{ q.related_skill or
+                                'General' }}</p>
+                            <p class="mb-0"><strong class="text-success">Sample Answer Guidance:</strong> {{
+                                q.sample_answer_hint }}</p>
                         </div>
                     </div>
+                </div>
                 {% else %}
-                    <p class="text-muted">No resume questions generated yet.</p>
+                <p class="text-muted">No resume questions generated yet.</p>
                 {% endfor %}
             </div>
         </div>
@@ -372,24 +417,32 @@
             <div class="row g-4">
                 <div class="col-lg-8">
                     <div class="glass-card p-3 bg-dark d-flex flex-column" style="min-height: 450px;">
-                        <div class="d-flex justify-content-between align-items-center pb-2 border-bottom border-secondary mb-3">
-                            <h6 class="fw-bold mb-0 text-info"><i class="fa-solid fa-robot me-2"></i> AI Resume Recruiter Session</h6>
-                            <button id="startInterviewBtn" class="btn btn-sm btn-primary-custom" onclick="startResumeInterview()">
+                        <div
+                            class="d-flex justify-content-between align-items-center pb-2 border-bottom border-secondary mb-3">
+                            <h6 class="fw-bold mb-0 text-info"><i class="fa-solid fa-robot me-2"></i> AI Resume
+                                Recruiter Session</h6>
+                            <button id="startInterviewBtn" class="btn btn-sm btn-primary-custom"
+                                onclick="startResumeInterview()">
                                 <i class="fa-solid fa-play me-1"></i> Start Interactive Interview Session
                             </button>
                         </div>
 
                         <!-- Chat Messages Window -->
-                        <div id="interviewChatBox" class="flex-grow-1 p-3 overflow-auto rounded bg-black bg-opacity-50 mb-3" style="max-height: 350px;">
+                        <div id="interviewChatBox"
+                            class="flex-grow-1 p-3 overflow-auto rounded bg-black bg-opacity-50 mb-3"
+                            style="max-height: 350px;">
                             <div class="text-center text-muted py-5" id="chatPlaceholder">
                                 <i class="fa-solid fa-comments fa-3x mb-3 opacity-50"></i>
-                                <p>Click "Start Interactive Interview Session" to begin a live mock interview based on your resume.</p>
+                                <p>Click "Start Interactive Interview Session" to begin a live mock interview based on
+                                    your resume.</p>
                             </div>
                         </div>
 
                         <!-- User Input Box -->
                         <div class="input-group" id="interviewInputGroup" style="display: none;">
-                            <input type="text" id="candidateInput" class="form-control bg-dark text-white border-secondary" placeholder="Type your answer here..." onkeypress="handleEnterKey(event)">
+                            <input type="text" id="candidateInput"
+                                class="form-control bg-dark text-white border-secondary"
+                                placeholder="Type your answer here..." onkeypress="handleEnterKey(event)">
                             <button class="btn btn-primary-custom" onclick="submitInterviewAnswer()">
                                 <i class="fa-solid fa-paper-plane me-1"></i> Submit Answer
                             </button>
@@ -399,11 +452,15 @@
 
                 <div class="col-lg-4">
                     <div class="p-3 bg-dark rounded border border-secondary">
-                        <h6 class="fw-bold text-light mb-2"><i class="fa-solid fa-bullseye me-2"></i> Interview Evaluation Guidelines</h6>
+                        <h6 class="fw-bold text-light mb-2"><i class="fa-solid fa-bullseye me-2"></i> Interview
+                            Evaluation Guidelines</h6>
                         <ul class="text-muted small ps-3 mb-0">
-                            <li class="mb-2">Answers are evaluated on technical accuracy, clarity, and structural completeness.</li>
-                            <li class="mb-2">Use the <strong>STAR Method</strong> (Situation, Task, Action, Result) when discussing past project challenges.</li>
-                            <li class="mb-2">Keep your responses concise and focused on your individual technical contributions.</li>
+                            <li class="mb-2">Answers are evaluated on technical accuracy, clarity, and structural
+                                completeness.</li>
+                            <li class="mb-2">Use the <strong>STAR Method</strong> (Situation, Task, Action, Result) when
+                                discussing past project challenges.</li>
+                            <li class="mb-2">Keep your responses concise and focused on your individual technical
+                                contributions.</li>
                         </ul>
                     </div>
                 </div>
@@ -413,85 +470,90 @@
 </div>
 
 <script>
-let activeSessionId = null;
+    let activeSessionId = null;
 
-function startResumeInterview() {
-    fetch("{{ url_for('resume.start_interview', resume_id=analysis.resume.id) }}", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": "{{ csrf_token() }}"
-        }
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.session_id) {
-            activeSessionId = data.session_id;
-            document.getElementById('startInterviewBtn').style.display = 'none';
-            document.getElementById('interviewInputGroup').style.display = 'flex';
-            
-            const chatBox = document.getElementById('interviewChatBox');
-            chatBox.innerHTML = `
+    function startResumeInterview() {
+        fetch("{{ url_for('resume.start_interview', resume_id=analysis.resume.id) }}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token() }}"
+            }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.session_id) {
+                    activeSessionId = data.session_id;
+                    document.getElementById('startInterviewBtn').style.display = 'none';
+                    document.getElementById('interviewInputGroup').style.display = 'flex';
+
+                    const chatBox = document.getElementById('interviewChatBox');
+                    chatBox.innerHTML = `
                 <div class="mb-3">
                     <span class="badge bg-info mb-1">INTERVIEWER (AI)</span>
                     <div class="p-3 bg-dark rounded text-light border border-secondary">${data.greeting.replace(/\n/g, '<br>')}</div>
                 </div>
             `;
-        }
-    });
-}
+                }
+            });
+    }
 
-function submitInterviewAnswer() {
-    const input = document.getElementById('candidateInput');
-    const ans = input.value.trim();
-    if (!ans || !activeSessionId) return;
+    function submitInterviewAnswer() {
+        const input = document.getElementById('candidateInput');
+        const ans = input.value.trim();
+        if (!ans || !activeSessionId) return;
 
-    const chatBox = document.getElementById('interviewChatBox');
-    
-    // Append candidate message
-    chatBox.innerHTML += `
+        const chatBox = document.getElementById('interviewChatBox');
+
+        // Append candidate message
+        chatBox.innerHTML += `
         <div class="mb-3 text-end">
             <span class="badge bg-primary mb-1">YOU (CANDIDATE)</span>
             <div class="p-3 bg-primary bg-opacity-25 rounded text-light border border-primary d-inline-block text-start" style="max-width: 85%;">${ans}</div>
         </div>
     `;
-    input.value = '';
-    chatBox.scrollTop = chatBox.scrollHeight;
+        input.value = '';
+        chatBox.scrollTop = chatBox.scrollHeight;
 
-    fetch(`/resume/interview/respond/${activeSessionId}`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": "{{ csrf_token() }}"
-        },
-        body: JSON.stringify({ answer: ans })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.session_completed) {
-            chatBox.innerHTML += `
+        fetch(`/resume/interview/respond/${activeSessionId}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token() }}"
+            },
+            body: JSON.stringify({ answer: ans })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.session_completed) {
+                    chatBox.innerHTML += `
                 <div class="mb-3">
                     <span class="badge bg-success mb-1">INTERVIEW COMPLETED</span>
                     <div class="p-3 bg-dark rounded text-light border border-success">${data.feedback.replace(/\n/g, '<br>')}</div>
                 </div>
             `;
-            document.getElementById('interviewInputGroup').style.display = 'none';
-        } else {
-            chatBox.innerHTML += `
+                    document.getElementById('interviewInputGroup').style.display = 'none';
+                } else {
+                    chatBox.innerHTML += `
                 <div class="mb-3">
                     <span class="badge bg-info mb-1">INTERVIEWER (AI)</span>
                     <div class="p-3 bg-dark rounded text-light border border-secondary">${data.next_question ? data.next_question.replace(/\n/g, '<br>') : data.feedback.replace(/\n/g, '<br>')}</div>
                 </div>
             `;
-        }
-        chatBox.scrollTop = chatBox.scrollHeight;
-    });
-}
-
-function handleEnterKey(e) {
-    if (e.key === 'Enter') {
-        submitInterviewAnswer();
+                }
+                chatBox.scrollTop = chatBox.scrollHeight;
+            });
     }
-}
+
+    function handleEnterKey(e) {
+        if (e.key === 'Enter') {
+            submitInterviewAnswer();
+        }
+    }
+
+    // Apply data-width values to progress bars (avoids Jinja2 in style attrs)
+    document.querySelectorAll('.progress-bar[data-width]').forEach(function(bar) {
+        bar.style.width = bar.getAttribute('data-width') + '%';
+    });
 </script>
 {% endblock %}

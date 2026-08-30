@@ -68,9 +68,9 @@
                     {% for q in pagination.items %}
                     <tr>
                         <td class="font-monospace text-muted">#{{ q.id }}</td>
-                        <td><span class="badge bg-secondary bg-opacity-20">{{ q.category.name if q.category else 'Quant' }}</span></td>
+                        <td><span class="badge bg-secondary bg-opacity-25">{{ q.category.name if q.category else 'Quant' }}</span></td>
                         <td class="fw-semibold text-white">{{ q.topic }}</td>
-                        <td><span class="badge bg-info bg-opacity-20 text-info text-capitalize">{{ q.difficulty }}</span></td>
+                        <td><span class="badge bg-info bg-opacity-25 text-info text-capitalize">{{ q.difficulty }}</span></td>
                         <td class="text-truncate" style="max-width: 300px;">{{ q.question_text }}</td>
                         <td class="text-center"><span class="badge bg-success font-monospace">{{ q.correct_option }}</span></td>
                         <td class="text-muted fs-7">{{ q.source_type }}</td>
