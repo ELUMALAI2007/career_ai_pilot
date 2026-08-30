@@ -9,9 +9,309 @@
 </div>
 
 <div class="glass-card p-4">
-    <h5 class="fw-bold mb-3">Self-Assessment Tool</h5>
-    <!-- TODO: Communication practice input forms -->
-    <textarea class="form-control bg-dark text-white border-secondary mb-3" rows="5" placeholder="Paste your response or speech draft here for NLP analysis..."></textarea>
-    <button class="btn btn-primary-custom">Evaluate Communication</button>
+    <h5 class="fw-bold mb-3">Practice Session</h5>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <label for="practiceType" class="form-label">Choose practice type</label>
+            <select id="practiceType" class="form-select bg-dark text-white border-secondary">
+                <option value="interview">Interview Answer</option>
+                <option value="email">Professional Email</option>
+                <option value="introduction">Self Introduction</option>
+                <option value="teamwork">Teamwork</option>
+                <option value="conflict">Conflict Resolution</option>
+                <option value="listening">Active Listening</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+           <label class="form-label">Practice prompt</label>
+
+         <div id="practicePrompt" class="form-control bg-dark text-white border-secondary mb-2">
+          Tell me about yourself and explain why you are a good fit for this role.
+         </div>
+
+           <button type="button" id="newPromptButton" class="btn btn-outline-light btn-sm">
+          <i class="fa-solid fa-rotate me-1"></i> New Question
+          </button>
+        </div>
+    <label for="communicationResponse" class="form-label">Your response</label>
+    <textarea id="communicationResponse"
+              class="form-control bg-dark text-white border-secondary mb-2"
+              rows="7"
+              placeholder="Write your answer here..."></textarea>
+
+    <div class="d-flex justify-content-between text-muted small mb-3">
+        <span>Write clearly and use professional language.</span>
+        <span id="wordCount">0 words</span>
+    </div>
+
+    <div class="d-flex gap-2">
+    <button type="button" id="voiceButton" class="btn btn-outline-light">
+    <i class="fa-solid fa-microphone me-2"></i>Speak Answer
+    </button>
+    <button type="button" id="evaluateButton" class="btn btn-primary-custom">
+        <i class="fa-solid fa-wand-magic-sparkles me-2"></i>Evaluate Communication
+    </button>
+
+    <button type="button" id="resetButton" class="btn btn-outline-light">
+        <i class="fa-solid fa-rotate-left me-2"></i>Reset
+    </button>
+    </div>
 </div>
+
+<div class="glass-card p-4 mt-4" id="resultsSection">
+    <h5 class="fw-bold mb-3">Evaluation Results</h5>
+
+    <div class="row g-3">
+    <div class="col-md-3">
+        <div class="border border-secondary rounded p-3 text-center">
+            <small class="text-muted">Overall Score</small>
+            <h3 id="overallScore" class="text-primary mb-0">-- / 100</h3>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="border border-secondary rounded p-3 text-center">
+            <small class="text-muted">Grammar</small>
+            <h3 id="grammarScore" class="mb-0">-- / 100</h3>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="border border-secondary rounded p-3 text-center">
+            <small class="text-muted">Clarity</small>
+            <h3 id="clarityScore" class="mb-0">-- / 100</h3>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="border border-secondary rounded p-3 text-center">
+            <small class="text-muted">Confidence</small>
+            <h3 id="confidenceScore" class="mb-0">-- / 100</h3>
+        </div>
+    </div>
+</div>
+
+    <div class="mt-4">
+        <h6 class="fw-bold">Feedback</h6>
+        <div id="feedbackContent" class="text-muted">
+    Submit a response to receive grammar, clarity, tone, and soft-skills feedback.
+       </div> 
+    </div>
+</div>
+<script>
+   const questions = {
+    interview: [
+        "Tell me about yourself and explain why you are a good fit for this role.",
+        "What is your greatest strength?",
+        "What is one weakness you are working to improve?",
+        "Why do you want to work for this company?",
+        "Where do you see yourself in five years?",
+        "Why should we hire you?",
+        "What achievement are you most proud of?",
+        "How do you handle pressure and deadlines?",
+        "Describe a time you faced a difficult challenge.",
+        "What motivates you to do your best work?"
+    ],
+    email: [
+        "Write a professional email requesting an update on your job application.",
+        "Write an email thanking an interviewer after an interview.",
+        "Write an email asking your manager for feedback on your work.",
+        "Write an email informing your team that you will be absent tomorrow.",
+        "Write an email requesting a meeting with your manager.",
+        "Write an email apologising for missing a deadline.",
+        "Write an email asking a colleague for help with a task.",
+        "Write an email accepting a job offer professionally.",
+        "Write an email declining a meeting politely.",
+        "Write an email following up after sending your resume."
+    ],
+    introduction: [
+        "Introduce yourself to a recruiter in 60 seconds.",
+        "Introduce yourself on your first day at a new job.",
+        "Give a short introduction before a group presentation.",
+        "Introduce yourself during an online interview.",
+        "Introduce yourself to a new client.",
+        "Introduce yourself at a professional networking event.",
+        "Introduce yourself as a final-year student seeking a job.",
+        "Introduce yourself before leading a team meeting.",
+        "Introduce yourself to a senior manager.",
+        "Introduce yourself when joining a new project team."
+    ],
+    teamwork: [
+        "Describe a time when you worked successfully with a team.",
+        "How would you handle a teammate who is not contributing?",
+        "What role do you usually take in a team project?",
+        "How do you encourage cooperation within a team?",
+        "Describe a situation where you helped a teammate.",
+        "How would you work with a teammate who has a different opinion?",
+        "What would you do if your team was missing a deadline?",
+        "How do you share responsibilities in a group project?",
+        "Describe a time you received feedback from a teammate.",
+        "How do you make sure every team member is heard?"
+    ],
+    conflict: [
+        "Describe a conflict you had with a teammate and how you resolved it.",
+        "How would you respond if you disagreed with your manager?",
+        "What would you do if two team members were arguing?",
+        "How do you stay calm during a disagreement?",
+        "How would you respond to unfair criticism?",
+        "What would you do if a colleague blamed you for their mistake?",
+        "How would you resolve a misunderstanding with a teammate?",
+        "How would you handle a difficult customer?",
+        "What would you do if you strongly disagreed with a project decision?",
+        "How do you give constructive feedback without causing conflict?"
+    ],
+    listening: [
+        "How do you show someone that you are actively listening?",
+        "What would you do if you did not understand your manager's instructions?",
+        "How would you respond to constructive criticism?",
+        "How do you make sure you understand a task correctly?",
+        "What would you do if a colleague interrupted you repeatedly?",
+        "How would you respond when a customer explains a problem?",
+        "How do you remember important points during a meeting?",
+        "What questions would you ask after receiving a new assignment?",
+        "How would you clarify an unclear email from your manager?",
+        "How do you show empathy when someone shares a concern?"
+    ]
+     };
+
+    const practiceType = document.getElementById("practiceType");
+    const practicePrompt = document.getElementById("practicePrompt");
+    const newPromptButton = document.getElementById("newPromptButton");
+
+    function showNewQuestion() {
+        const selectedType = practiceType.value;
+        const questionList = questions[selectedType];
+        const randomIndex = Math.floor(Math.random() * questionList.length);
+
+        practicePrompt.textContent = questionList[randomIndex];
+    }
+
+    practiceType.addEventListener("change", showNewQuestion);
+    newPromptButton.addEventListener("click", showNewQuestion);
+    const responseBox = document.getElementById("communicationResponse");
+    const evaluateButton = document.getElementById("evaluateButton");
+    const resetButton = document.getElementById("resetButton");
+    const voiceButton = document.getElementById("voiceButton");
+    const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (SpeechRecognition) {
+    const recognition = new SpeechRecognition();
+
+    recognition.lang = "en-IN";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    voiceButton.addEventListener("click", () => {
+        voiceButton.disabled = true;
+        voiceButton.textContent = "Listening...";
+        recognition.start();
+    });
+
+    recognition.addEventListener("result", (event) => {
+        const spokenText = event.results[0][0].transcript;
+
+        responseBox.value = (responseBox.value + " " + spokenText).trim();
+        updateWordCount();
+    });
+
+    recognition.addEventListener("end", () => {
+        voiceButton.disabled = false;
+        voiceButton.innerHTML =
+            '<i class="fa-solid fa-microphone me-2"></i>Speak Answer';
+    });
+
+    recognition.addEventListener("error", () => {
+        alert("Microphone access failed. Please allow microphone permission.");
+    });
+  } else {
+    voiceButton.disabled = true;
+    voiceButton.textContent = "Voice input is not supported in this browser";
+    }
+const wordCount = document.getElementById("wordCount");
+const feedbackContent = document.getElementById("feedbackContent");
+
+function updateWordCount() {
+    const words = responseBox.value.trim().split(/\s+/).filter(Boolean);
+    wordCount.textContent = words.length + " words";
+}
+
+responseBox.addEventListener("input", updateWordCount);
+
+resetButton.addEventListener("click", () => {
+    responseBox.value = "";
+    updateWordCount();
+
+    document.getElementById("overallScore").textContent = "-- / 100";
+    document.getElementById("grammarScore").textContent = "-- / 100";
+    document.getElementById("clarityScore").textContent = "-- / 100";
+    document.getElementById("confidenceScore").textContent = "-- / 100";
+
+    feedbackContent.textContent =
+        "Submit a response to receive grammar, clarity, tone, and soft-skills feedback.";
+});
+
+    evaluateButton.addEventListener("click", async () => {
+     const answer = responseBox.value.trim();
+
+      if (!answer) {
+        alert("Please write an answer before evaluating.");
+        return;
+      }
+
+     evaluateButton.disabled = true;
+     evaluateButton.textContent = "Evaluating...";
+
+     try {
+        const response = await fetch("{{ url_for('communication.evaluate') }}", {
+            method: "POST",
+            headers: {
+    "Content-Type": "application/json",
+    "X-CSRFToken": "{{ csrf_token() }}"
+},
+            body: JSON.stringify({
+                answer: answer,
+                practice_type: practiceType.value,
+                question: practicePrompt.textContent
+            })
+        });
+    if (!response.ok) {
+     throw new Error("Server returned status: " + response.status);
+     }
+
+        const result = await response.json();
+
+        if (!result.success) {
+            alert(result.message || "Unable to evaluate the response.");
+            return;
+        }
+
+        document.getElementById("overallScore").textContent =
+    result.scores.overall + " / 100";
+
+     document.getElementById("grammarScore").textContent =
+      result.scores.grammar + " / 100";
+
+     document.getElementById("clarityScore").textContent =
+     result.scores.clarity + " / 100";
+
+     document.getElementById("confidenceScore").textContent =
+    result.scores.confidence + " / 100";
+
+     document.getElementById("feedbackContent").innerHTML =
+     "<p><strong>Strengths</strong></p><ul>" +
+     result.strengths.map(item => "<li>" + item + "</li>").join("") +
+     "</ul><p><strong>How to improve</strong></p><ul>" +
+     result.improvements.map(item => "<li>" + item + "</li>").join("") +
+     "</ul>";
+     } catch (error) {
+       alert("Error: " + error.message);
+        console.error(error);
+     } finally {
+        evaluateButton.disabled = false;
+        evaluateButton.textContent = "Evaluate Communication";
+     }
+    });
+</script>
 {% endblock %}
